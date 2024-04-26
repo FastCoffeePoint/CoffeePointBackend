@@ -1,0 +1,6 @@
+@Cpb.Api_HostAddress = http://localhost:5143
+
+GET {{Cpb.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

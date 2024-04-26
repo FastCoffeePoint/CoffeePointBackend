@@ -1,0 +1,6 @@
+﻿services:
+  cpb.api:
+    image: cpb.api
+    build:
+      context: .
+      dockerfile: Cpb.Api/Dockerfile
