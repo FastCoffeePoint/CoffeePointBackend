@@ -31,9 +31,7 @@ public static class StartupExtenstions
                  IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authOptions.SecretKey))
              };
          });
-
-        services.Configure<AuthOptions>(configuration.GetSection(AuthOptions.Name));
-
+        
         return services;
     }
 }

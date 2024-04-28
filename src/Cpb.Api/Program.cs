@@ -1,16 +1,23 @@
 using Cpb.Api.AspNetCore;
 using Cpb.Application.Configurations;
 using Cpb.Application.Services;
+using Cpb.Common.Kafka;
 using Cpb.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
+//Services
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<PasswordHasher>();
 
+// Options
 builder.Services.Configure<DefaultAdminCredentials>(builder.Configuration.GetSection(DefaultAdminCredentials.Name));
+builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection(AuthOptions.Name));
+builder.Services.Configure<KafkaOptions>(builder.Configuration.GetSection(KafkaOptions.Name));
+
+
 builder.Services.AddDbContext<DbCoffeePointContext>(u => 
     u.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 

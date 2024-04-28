@@ -21,6 +21,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Cpb.Application\Cpb.Application.csproj" />
+      <ProjectReference Include="..\Cpb.Common\Cpb.Common.csproj" />
     </ItemGroup>
 
 </Project>
