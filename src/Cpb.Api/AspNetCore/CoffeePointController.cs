@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Cpb.Api.AspNetCore;
 
-public class BigStoreController : ControllerBase
+public class CoffeePointController : ControllerBase
 {
     protected const string DefaultUrl = "[controller]/[action]";
     private Actor _actor;

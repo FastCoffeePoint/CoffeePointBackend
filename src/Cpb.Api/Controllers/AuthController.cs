@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Cpb.Api.Controllers;
 
-public class AuthController(AuthService authService) : BigStoreController
+public class AuthController(AuthService authService) : CoffeePointController
 {
     [HttpPost(DefaultUrl)]
     public async Task<JsonResult<AuthResponse, string>> Login([FromBody] LoginUserForm form) =>
