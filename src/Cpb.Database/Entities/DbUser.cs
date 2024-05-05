@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using Cpb.Domain;
 
-namespace Cpb.Database;
+namespace Cpb.Database.Entities;
 
 public class DbUser
 {

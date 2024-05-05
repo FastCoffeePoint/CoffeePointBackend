@@ -11,6 +11,8 @@ var builder = WebApplication.CreateBuilder(args);
 //Services
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<PasswordHasher>();
+builder.Services.AddScoped<IngredientsService>();
+builder.Services.AddScoped<CoffeeRecipeService>();
 
 // Options
 builder.Services.Configure<DefaultAdminCredentials>(builder.Configuration.GetSection(DefaultAdminCredentials.Name));

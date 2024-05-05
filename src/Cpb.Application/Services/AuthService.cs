@@ -4,6 +4,7 @@ using System.Text;
 using System.Text.Json;
 using Cpb.Application.Configurations;
 using Cpb.Database;
+using Cpb.Database.Entities;
 using Cpb.Domain;
 using CSharpFunctionalExtensions;
 using Microsoft.EntityFrameworkCore;
