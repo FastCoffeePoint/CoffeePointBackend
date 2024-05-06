@@ -3,6 +3,9 @@ using Cpb.Application.Configurations;
 using Cpb.Application.Services;
 using Cpb.Common.Kafka;
 using Cpb.Database;
+using CSharpFunctionalExtensions;
+using Hangfire;
+using Hangfire.PostgreSql;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
@@ -12,7 +15,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<PasswordHasher>();
 builder.Services.AddScoped<IngredientsService>();
-builder.Services.AddScoped<CoffeeRecipeService>();
+builder.Services.AddScoped<CoffeeRecipesService>();
+builder.Services.AddScoped<CoffeeMachinesService>();
 
 // Options
 builder.Services.Configure<DefaultAdminCredentials>(builder.Configuration.GetSection(DefaultAdminCredentials.Name));
@@ -20,9 +24,18 @@ builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection(AuthOpt
 builder.Services.Configure<KafkaOptions>(builder.Configuration.GetSection(KafkaOptions.Name));
 
 
+// Hangfire
+builder.Services.AddHangfire(configuration => configuration
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UsePostgreSqlStorage(u => u.UseNpgsqlConnection(builder.Configuration.GetConnectionString("HangfireConnection"))));
+builder.Services.AddHangfireServer();
+
 builder.Services.AddDbContext<DbCoffeePointContext>(u => 
     u.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddHttpClient();
 builder.Services.AddCustomAuthentication(builder.Configuration);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(u => 
@@ -33,6 +46,7 @@ builder.Services.AddSwaggerGen(u =>
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(builder =>
         builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+
 builder.Services.AddAuthorization();
 
 builder.Services.AddEndpointsApiExplorer();
@@ -41,6 +55,7 @@ builder.Services.AddControllers();
 var app = builder.Build();
 await InitializeDb(app);
 
+app.UseHangfireDashboard();
 app.UseSwagger();
 app.UseSwaggerUI();
 app.UseHttpsRedirection();

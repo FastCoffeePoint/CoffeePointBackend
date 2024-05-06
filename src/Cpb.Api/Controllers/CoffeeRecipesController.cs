@@ -7,25 +7,25 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Cpb.Api.Controllers;
 
-public class CoffeeController(CoffeeRecipeService _coffeeRecipeService) : CoffeePointController
+public class CoffeeRecipesController(CoffeeRecipesService coffeeRecipesService) : CoffeePointController
 {
     [HttpPost(DefaultUrl)]
     public async Task<JsonResult<Guid, string>> CreateCoffeeRecipe(CreateCoffeeRecipe form) => 
-        await _coffeeRecipeService.CreateCoffeeRecipe(form);
+        await coffeeRecipesService.CreateCoffeeRecipe(form);
     
     [HttpPost(DefaultUrl)]
     public async Task<JsonResult<Guid, string>> DeleteCoffeeRecipe(Guid recipeId) => 
-        await _coffeeRecipeService.DeleteCoffeeRecipe(recipeId);
+        await coffeeRecipesService.DeleteCoffeeRecipe(recipeId);
     
     [HttpPost(DefaultUrl)]
     public async Task<JsonResult<Guid, string>> AddIngredientToRecipe(ManageIngredientInRecipeForm form) => 
-        await _coffeeRecipeService.AddIngredientToRecipe(form);
+        await coffeeRecipesService.AddIngredientToRecipe(form);
     
     [HttpPost(DefaultUrl)]
     public async Task<JsonResult<Guid, string>> RemoveIngredientFromRecipe(ManageIngredientInRecipeForm form) => 
-        await _coffeeRecipeService.RemoveIngredientFromRecipe(form); 
+        await coffeeRecipesService.RemoveIngredientFromRecipe(form); 
     
     [HttpGet(DefaultUrl)]
     public async Task<ImmutableList<CoffeeRecipe>> GetCoffeeRecipes() => 
-        await _coffeeRecipeService.GetCoffeeRecipes(); 
+        await coffeeRecipesService.GetCoffeeRecipes(); 
 }

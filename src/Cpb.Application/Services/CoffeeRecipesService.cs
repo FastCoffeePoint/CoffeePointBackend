@@ -7,25 +7,33 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Cpb.Application.Services;
 
-public class CoffeeRecipeService(DbCoffeePointContext _dc)
+public class CoffeeRecipesService(DbCoffeePointContext _dc)
 {
     public async Task<ImmutableList<CoffeeRecipe>> GetCoffeeRecipes()
-    {
-        // TODO: fix, doesn't work
-        var recipes = await _dc.CoffeeRecipes.ExcludeDeleted()
-            .Include(u => u.Ingredients)
-            .AsNoTracking()
+    { 
+        var rawEntities = await _dc.CoffeeRecipes
+            .Join(_dc.CoffeeRecipeIngredients, 
+                recipe => recipe.Id,
+                link => link.CoffeeRecipeId, 
+                (recipe, link) => new { Recipe = recipe, Link = link }
+            )
+            .Join(_dc.Ingredients, 
+                recipeAndLink => recipeAndLink.Link.IngredientId, 
+                ingredient => ingredient.Id, 
+                (recipeAndLink, ingredient) => new 
+                {
+                    RecipeId = recipeAndLink.Recipe.Id,
+                    RecipeName = recipeAndLink.Recipe.Name,
+                    
+                    IngredientId = ingredient.Id,
+                    IngredientAmount = recipeAndLink.Link.Amount,
+                    IngredientName = ingredient.Name,
+                }
+            ).GroupBy(u => u.RecipeId)
             .ToListAsync();
-        
-        var linkIds = recipes.SelectMany(u => u.Ingredients.Select(v => new { IngredientId = v.Id, RecipeId = u.Id })).ToList();
-        var links = (await _dc.CoffeeRecipeIngredients
-            .Where(u => linkIds.Any(v => v.IngredientId == u.IngredientId && u.CoffeeRecipeId == v.RecipeId))
-            .ToListAsync())
-            .ToDictionary(u => (u.CoffeeRecipeId, u.IngredientId));
-        
-        var mappedList = recipes
-            .Select(u => new CoffeeRecipe(u.Id, u.Name, u.Ingredients.Select(v => 
-                new CoffeeRecipeIngredient(v.Id, v.Name, links[(u.Id, v.Id)].Amount)).ToImmutableList()))
+
+        var mappedList = rawEntities.Select(u => new CoffeeRecipe(u.Key, u.First().RecipeName,
+                u.Select(v => new CoffeeRecipeIngredient(v.IngredientId, v.RecipeName, v.IngredientAmount)).ToImmutableList()))
             .ToImmutableList();
         
 
