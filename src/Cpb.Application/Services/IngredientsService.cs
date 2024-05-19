@@ -16,7 +16,7 @@ public class IngredientsService(DbCoffeePointContext _dc)
 
     public async Task<Result<Guid, string>> Create(CreateIngredientForm form)
     {
-        if (string.IsNullOrEmpty(form.Name) || form.Name.Length > 3)
+        if (string.IsNullOrEmpty(form.Name) || form.Name.Length < 3)
             return "Invalid name for ingredient";
         
         var nameIsBusy = await _dc.Ingredients.ExcludeDeleted().AnyAsync(u => u.Name == form.Name);

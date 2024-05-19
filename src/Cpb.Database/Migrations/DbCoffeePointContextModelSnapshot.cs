@@ -47,7 +47,7 @@ namespace Cpb.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("CoffeeMachines");
+                    b.ToTable("CoffeeMachines", (string)null);
                 });
 
             modelBuilder.Entity("Cpb.Database.Entities.DbCoffeeMachineIngredient", b =>
@@ -71,7 +71,7 @@ namespace Cpb.Database.Migrations
 
                     b.HasIndex("IngredientId");
 
-                    b.ToTable("CoffeeMachineIngredients");
+                    b.ToTable("CoffeeMachineIngredients", (string)null);
                 });
 
             modelBuilder.Entity("Cpb.Database.Entities.DbCoffeeRecipe", b =>
@@ -92,7 +92,7 @@ namespace Cpb.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("CoffeeRecipes");
+                    b.ToTable("CoffeeRecipes", (string)null);
                 });
 
             modelBuilder.Entity("Cpb.Database.Entities.DbCoffeeRecipeIngredient", b =>
@@ -110,7 +110,7 @@ namespace Cpb.Database.Migrations
 
                     b.HasIndex("IngredientId");
 
-                    b.ToTable("CoffeeRecipeIngredients");
+                    b.ToTable("CoffeeRecipeIngredients", (string)null);
                 });
 
             modelBuilder.Entity("Cpb.Database.Entities.DbIngredient", b =>
@@ -131,7 +131,7 @@ namespace Cpb.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Ingredients");
+                    b.ToTable("Ingredients", (string)null);
                 });
 
             modelBuilder.Entity("Cpb.Database.Entities.DbUser", b =>
@@ -161,7 +161,7 @@ namespace Cpb.Database.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.ToTable("Users", (string)null);
                 });
 
             modelBuilder.Entity("Cpb.Database.Entities.DbCoffeeMachineIngredient", b =>

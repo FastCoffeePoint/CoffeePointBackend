@@ -13,19 +13,23 @@ public class CoffeeRecipesController(CoffeeRecipesService coffeeRecipesService) 
     public async Task<JsonResult<Guid, string>> CreateCoffeeRecipe(CreateCoffeeRecipe form) => 
         await coffeeRecipesService.CreateCoffeeRecipe(form);
     
-    [HttpPost(DefaultUrl)]
+    [HttpDelete(DefaultUrl)]
     public async Task<JsonResult<Guid, string>> DeleteCoffeeRecipe(Guid recipeId) => 
         await coffeeRecipesService.DeleteCoffeeRecipe(recipeId);
     
-    [HttpPost(DefaultUrl)]
-    public async Task<JsonResult<Guid, string>> AddIngredientToRecipe(ManageIngredientInRecipeForm form) => 
-        await coffeeRecipesService.AddIngredientToRecipe(form);
+    [HttpPut(DefaultUrl)]
+    public async Task<JsonResult<Guid, string>> SetIngredientInRecipe(SetIngredientInRecipeForm setIngredientInRecipeForm) => 
+        await coffeeRecipesService.SetIngredientInRecipe(setIngredientInRecipeForm);
     
-    [HttpPost(DefaultUrl)]
-    public async Task<JsonResult<Guid, string>> RemoveIngredientFromRecipe(ManageIngredientInRecipeForm form) => 
+    [HttpDelete(DefaultUrl)]
+    public async Task<JsonResult<Guid, string>> RemoveIngredientFromRecipe(RemoveIngredientFromRecipeForm form) => 
         await coffeeRecipesService.RemoveIngredientFromRecipe(form); 
     
     [HttpGet(DefaultUrl)]
     public async Task<ImmutableList<CoffeeRecipe>> GetCoffeeRecipes() => 
         await coffeeRecipesService.GetCoffeeRecipes(); 
+    
+    [HttpGet(DefaultUrl)]
+    public async Task<ImmutableList<CustomerCoffeeRecipe>> GetAvailableToOrderRecipes() => 
+        await coffeeRecipesService.GetAvailableToOrderRecipes(); 
 }

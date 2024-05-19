@@ -3,8 +3,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Cpb.Database;
 
-public class DbCoffeePointContext(DbContextOptions<DbCoffeePointContext> options) : DbContext(options)
+public class DbCoffeePointContext : DbContext
 {
+    public DbCoffeePointContext(DbContextOptions<DbCoffeePointContext> options) : base(options)
+    {
+        AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+    }
+
     public DbSet<DbUser> Users { get; set; }
 
     public DbSet<DbCoffeeMachine> CoffeeMachines { get; set; }

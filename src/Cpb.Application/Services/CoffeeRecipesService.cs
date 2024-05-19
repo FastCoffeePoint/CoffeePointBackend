@@ -7,40 +7,64 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Cpb.Application.Services;
 
-public class CoffeeRecipesService(DbCoffeePointContext _dc)
+public class CoffeeRecipesService(DbCoffeePointContext _dc, CoffeeMachinesService _machinesService)
 {
+    public async Task<ImmutableList<CustomerCoffeeRecipe>> GetAvailableToOrderRecipes()
+    {
+        var machines = await _machinesService.GetCoffeeMachines();
+        var recipes = await GetCoffeeRecipes();
+
+        var result = new List<CustomerCoffeeRecipe>();
+        foreach (var recipe in recipes)
+        {
+            var totalAvailable = 0;
+            foreach (var machine in machines)
+            {
+                List<(int Amount, CoffeeRecipeIngredient Ingredient)> amountByIngredients = recipe.Ingredients.Select(recipeIngredient =>
+                {
+                    var machineIngredient = machine.Ingredients.FirstOrDefault(k => recipeIngredient.Id == k.Id);
+                    if (machineIngredient == null)
+                        return (0, recipeIngredient); 
+                    
+                    var availableIngredients = machineIngredient.Amount / recipeIngredient.Amount;
+                    return (availableIngredients, recipeIngredient);
+                }).ToList();
+
+                var minAmount = amountByIngredients.MinBy(u => u.Amount);
+                totalAvailable += minAmount.Amount;
+            }
+            
+            result.Add(new CustomerCoffeeRecipe(recipe.Id, recipe.Name, totalAvailable, recipe.Ingredients));
+        }
+
+        return result.ToImmutableList();
+    }
+    
     public async Task<ImmutableList<CoffeeRecipe>> GetCoffeeRecipes()
     { 
-        var rawEntities = await _dc.CoffeeRecipes
-            .Join(_dc.CoffeeRecipeIngredients, 
-                recipe => recipe.Id,
-                link => link.CoffeeRecipeId, 
-                (recipe, link) => new { Recipe = recipe, Link = link }
-            )
-            .Join(_dc.Ingredients, 
-                recipeAndLink => recipeAndLink.Link.IngredientId, 
-                ingredient => ingredient.Id, 
-                (recipeAndLink, ingredient) => new 
-                {
-                    RecipeId = recipeAndLink.Recipe.Id,
-                    RecipeName = recipeAndLink.Recipe.Name,
-                    
-                    IngredientId = ingredient.Id,
-                    IngredientAmount = recipeAndLink.Link.Amount,
-                    IngredientName = ingredient.Name,
-                }
-            ).GroupBy(u => u.RecipeId)
+        var recipes = await _dc.CoffeeRecipes
+            .Include(u => u.Links)
             .ToListAsync();
 
-        var mappedList = rawEntities.Select(u => new CoffeeRecipe(u.Key, u.First().RecipeName,
-                u.Select(v => new CoffeeRecipeIngredient(v.IngredientId, v.RecipeName, v.IngredientAmount)).ToImmutableList()))
+        var ingredientIds = recipes.SelectMany(u => u.Links.Select(v => v.IngredientId))
+            .Distinct()
+            .ToList();
+        var ingredients = await _dc.Ingredients.ExcludeDeleted()
+            .Where(u => ingredientIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id);
+
+        var result = recipes.Select(u => 
+                new CoffeeRecipe(u.Id, u.Name, u.Links.Select(v => Map(ingredients[v.IngredientId], v)).ToImmutableList()))
             .ToImmutableList();
         
 
-        return mappedList;
+        return result;
     }
+
+    private CoffeeRecipeIngredient Map(DbIngredient model, DbCoffeeRecipeIngredient link) =>
+        new(model.Id, model.Name, link.Amount);
     
-    public async Task<Result<Guid, string>> AddIngredientToRecipe(ManageIngredientInRecipeForm form)
+    public async Task<Result<Guid, string>> SetIngredientInRecipe(SetIngredientInRecipeForm form)
     {
         var recipeExist = await _dc.CoffeeRecipes.ExcludeDeleted().AnyAsync(u => u.Id == form.RecipeId);
         if (!recipeExist)
@@ -59,20 +83,17 @@ public class CoffeeRecipesService(DbCoffeePointContext _dc)
             {
                 CoffeeRecipeId = form.RecipeId,
                 IngredientId = form.IngredientId,
-                Amount = 1,
             };
             _dc.CoffeeRecipeIngredients.Add(link);
-            await _dc.SaveChangesAsync();
-            return link.CoffeeRecipeId;
         }
 
-        link.Amount++;
+        link.Amount = form.Amount;
         await _dc.SaveChangesAsync();
 
         return link.CoffeeRecipeId;
     }
     
-    public async Task<Result<Guid, string>> RemoveIngredientFromRecipe(ManageIngredientInRecipeForm form)
+    public async Task<Result<Guid, string>> RemoveIngredientFromRecipe(RemoveIngredientFromRecipeForm form)
     {
         var recipeExist = await _dc.CoffeeRecipes.ExcludeDeleted().AnyAsync(u => u.Id == form.RecipeId);
         if (!recipeExist)
@@ -88,11 +109,7 @@ public class CoffeeRecipesService(DbCoffeePointContext _dc)
         if (link == null)
             return form.RecipeId;
 
-        if (link.Amount == 0)
-            return link.CoffeeRecipeId;
-        
-        link.Amount--;
-        
+        _dc.CoffeeRecipeIngredients.Remove(link);
         await _dc.SaveChangesAsync();
 
         return link.CoffeeRecipeId;
