@@ -3,13 +3,14 @@ using Cpb.Application.Configurations;
 using Cpb.Application.Services;
 using Cpb.Common.Kafka;
 using Cpb.Database;
-using CSharpFunctionalExtensions;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
 
 //Services
 builder.Services.AddScoped<AuthService>();
@@ -32,6 +33,12 @@ builder.Services.AddHangfire(configuration => configuration
     .UsePostgreSqlStorage(u => u.UseNpgsqlConnection(builder.Configuration.GetConnectionString("HangfireConnection"))));
 builder.Services.AddHangfireServer();
 
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .WriteTo.Console()
+    .CreateLogger();
+
 builder.Services.AddDbContext<DbCoffeePointContext>(u => 
     u.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -53,6 +60,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddControllers();
 
 var app = builder.Build();
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 await InitializeDb(app);
 
 app.UseHangfireDashboard();
