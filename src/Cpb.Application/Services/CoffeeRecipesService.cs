@@ -56,7 +56,6 @@ public class CoffeeRecipesService(DbCoffeePointContext _dc, CoffeeMachinesServic
         var result = recipes.Select(u => 
                 new CoffeeRecipe(u.Id, u.Name, u.Links.Select(v => Map(ingredients[v.IngredientId], v)).ToImmutableList()))
             .ToImmutableList();
-        
 
         return result;
     }
@@ -148,6 +147,30 @@ public class CoffeeRecipesService(DbCoffeePointContext _dc, CoffeeMachinesServic
             .Where(u => u.CoffeeRecipeId == recipeId)
             .ToListAsync();
         _dc.CoffeeRecipeIngredients.RemoveRange(linkEntities);
+        await _dc.SaveChangesAsync();
+
+        return recipeId;
+    }
+
+    public async Task<Result<Guid, string>> IncreaseOrderedRecipeCount(Guid recipeId)
+    {
+        var recipe = await _dc.CoffeeRecipes.FirstOrDefaultAsync(u => u.Id == recipeId);
+        if (recipe == null)
+            return "Not a single recipe was found";
+
+        recipe.CurrentOrdersCount++;
+        await _dc.SaveChangesAsync();
+
+        return recipeId;
+    }
+    
+    public async Task<Result<Guid, string>> DecreaseOrderedRecipeCount(Guid recipeId)
+    {
+        var recipe = await _dc.CoffeeRecipes.FirstOrDefaultAsync(u => u.Id == recipeId);
+        if (recipe == null)
+            return "Not a single recipe was found";
+
+        recipe.CurrentOrdersCount--;
         await _dc.SaveChangesAsync();
 
         return recipeId;

@@ -18,6 +18,8 @@ public class DbCoffeePointContext : DbContext
     public DbSet<DbCoffeeRecipe> CoffeeRecipes  { get; set; }
     public DbSet<DbCoffeeRecipeIngredient> CoffeeRecipeIngredients  { get; set; }
 
+    public DbSet<DbOrder> Orders { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<DbCoffeeRecipe>()

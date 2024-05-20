@@ -7,31 +7,31 @@ namespace Cpb.Api.AspNetCore;
 
 public static class StartupExtenstions
 {
-    public static IServiceCollection AddCustomAuthentication(this IServiceCollection services, ConfigurationManager configuration)
+    public static IServiceCollection AddCustomAuthentication(this IServiceCollection services,
+        ConfigurationManager configuration)
     {
-        var authOptions = configuration.GetSection(nameof(AuthOptions)).Get<AuthOptions>();
+        var authOptions = configuration.GetSection(AuthOptions.Name).Get<AuthOptions>();
         if (authOptions is null)
             throw new ArgumentNullException($"Cannot get {nameof(AuthOptions)}");
 
         services.AddAuthentication(options =>
-         {
-             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-             options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        }).AddJwtBearer(jwtOptions =>
+        {
+            jwtOptions.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = authOptions.Issuer,
+                ValidAudience = authOptions.Audience,
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authOptions.SecretKey))
+            };
+        });
 
-         }).AddJwtBearer(jwtOptions =>
-         {
-             jwtOptions.TokenValidationParameters = new TokenValidationParameters
-             {
-                 ValidateIssuer = true,
-                 ValidateAudience = true,
-                 ValidateLifetime = true,
-                 ValidateIssuerSigningKey = true,
-                 ValidIssuer = authOptions.Issuer,
-                 ValidAudience = authOptions.Audience,
-                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authOptions.SecretKey))
-             };
-         });
-        
         return services;
     }
 }

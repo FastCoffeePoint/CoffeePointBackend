@@ -17,7 +17,7 @@ public class IngredientsController(IngredientsService _ingredientsService) : Cof
     public async Task<ImmutableList<Ingredient>> GetIngredients() => 
         await _ingredientsService.GetIngredients();
     
-    [HttpPost(DefaultUrl)]
+    [HttpDelete(DefaultUrl)]
     public async Task<JsonResult<Guid, string>> DeleteIngredient(Guid ingredientId) => 
         await _ingredientsService.Delete(ingredientId);
 }

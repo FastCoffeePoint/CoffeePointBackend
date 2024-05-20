@@ -18,6 +18,7 @@ builder.Services.AddScoped<PasswordHasher>();
 builder.Services.AddScoped<IngredientsService>();
 builder.Services.AddScoped<CoffeeRecipesService>();
 builder.Services.AddScoped<CoffeeMachinesService>();
+builder.Services.AddScoped<OrdersService>();
 
 // Options
 builder.Services.Configure<DefaultAdminCredentials>(builder.Configuration.GetSection(DefaultAdminCredentials.Name));

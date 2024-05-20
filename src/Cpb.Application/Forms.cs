@@ -24,7 +24,9 @@ public record RemoveIngredientFromRecipeForm(Guid RecipeId, Guid IngredientId);
 
 // Coffee machine
 public record RegisterCoffeeMachineForm(string Name);
-
 public record ApproveCoffeeMachineForm(Guid MachineId, string MachineHealthCheckEndpointUrl);
 public record SetIngredientInMachineForm(Guid MachineId, Guid IngredientId, int Amount);
 public record RemoveIngredientFromMachineForm(Guid MachineId, Guid IngredientId);
+
+// Orders
+public record OrderCoffeeForm(Guid RecipeId);
