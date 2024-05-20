@@ -21,7 +21,7 @@ public class OrdersService(DbCoffeePointContext _dc, CoffeeRecipesService _recip
             Id = Guid.NewGuid(),
             CoffeeRecipeId = form.RecipeId,
             UserId = actor.UserId,
-        };
+        }.MarkCreated();
         _dc.Orders.Add(order);
         await _dc.SaveChangesAsync();
 

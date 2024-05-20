@@ -58,7 +58,7 @@ public class AuthService
             return "The email is busy";
 
         var hashedPassword = _passwordHasher.HashPassword(form.Password);
-        var user = _dc.Users.Add(new DbUser()
+        var user = _dc.Users.Add(new DbUser
         {
             Email = form.Email,
             FirstName = form.FirstName,

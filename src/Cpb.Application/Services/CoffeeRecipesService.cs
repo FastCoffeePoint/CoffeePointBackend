@@ -42,7 +42,8 @@ public class CoffeeRecipesService(DbCoffeePointContext _dc, CoffeeMachinesServic
     
     public async Task<ImmutableList<CoffeeRecipe>> GetCoffeeRecipes()
     { 
-        var recipes = await _dc.CoffeeRecipes
+        var recipes = await _dc.CoffeeRecipes.ExcludeDeleted()
+            .AsNoTracking()
             .Include(u => u.Links)
             .ToListAsync();
 
@@ -50,6 +51,7 @@ public class CoffeeRecipesService(DbCoffeePointContext _dc, CoffeeMachinesServic
             .Distinct()
             .ToList();
         var ingredients = await _dc.Ingredients.ExcludeDeleted()
+            .AsNoTracking()
             .Where(u => ingredientIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id);
 
