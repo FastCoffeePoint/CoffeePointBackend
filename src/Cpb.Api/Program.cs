@@ -1,6 +1,8 @@
 using Cpb.Api.AspNetCore;
+using Cpb.Application;
 using Cpb.Application.Configurations;
 using Cpb.Application.Services;
+using Cpb.Common;
 using Cpb.Common.Kafka;
 using Cpb.Database;
 using Hangfire;
@@ -19,6 +21,9 @@ builder.Services.AddScoped<IngredientsService>();
 builder.Services.AddScoped<CoffeeRecipesService>();
 builder.Services.AddScoped<CoffeeMachinesService>();
 builder.Services.AddScoped<OrdersService>();
+
+// Kafka
+//builder.Services.AddConsumer<CoffeeStartedBrewingEvent, CoffeeStartedBrewingEventHandler>(GetConfigurationOnRun<KafkaOptions>());
 
 // Options
 builder.Services.Configure<DefaultAdminCredentials>(builder.Configuration.GetSection(DefaultAdminCredentials.Name));
@@ -43,17 +48,15 @@ Log.Logger = new LoggerConfiguration()
 builder.Services.AddDbContext<DbCoffeePointContext>(u => 
     u.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+builder.Services.AddCustomAuthentication(GetConfigurationOnRun<AuthOptions>());
 builder.Services.AddHttpClient();
-builder.Services.AddCustomAuthentication(builder.Configuration);
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(u => 
 {
     u.AddSecurityDefinition("Bearer", GetOpenApiSecurityScheme());
     u.AddSecurityRequirement(GetOpenApiSecurityRequirement());
 });
-builder.Services.AddCors(options =>
-    options.AddDefaultPolicy(builder =>
-        builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+builder.Services.AddCors(options => options.AddDefaultPolicy(u => u.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 
 builder.Services.AddAuthorization();
 
@@ -76,6 +79,16 @@ app.MapControllers();
 
 app.Run();
 
+
+#region Helpers
+
+T GetConfigurationOnRun<T>() where T : IOptions
+{
+    var authOptions = builder.Configuration.GetSection(T.Name).Get<T>();
+    if (authOptions is null)
+        throw new ArgumentNullException($"Cannot get {nameof(T)}");
+    return authOptions;
+}
 
 async Task InitializeDb(IHost host)
 {
@@ -109,3 +122,5 @@ OpenApiSecurityRequirement GetOpenApiSecurityRequirement() => new()
         Array.Empty<string>()
     }
 };
+
+#endregion

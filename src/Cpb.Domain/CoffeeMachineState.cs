@@ -1,6 +1,6 @@
 ﻿namespace Cpb.Domain;
 
-public enum CoffeeMachineState
+public enum CoffeeMachineStates
 {
     Unavailable = 0,
     Active = 1,

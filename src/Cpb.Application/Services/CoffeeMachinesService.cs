@@ -50,7 +50,7 @@ public class CoffeeMachinesService(DbCoffeePointContext _dc, IHttpClientFactory 
         var machine = new DbCoffeeMachine
         {
             Name = form.Name,
-            State = CoffeeMachineState.WaitingApprove,
+            State = CoffeeMachineStates.WaitingApprove,
             MachineHealthCheckEndpointUrl = null,
         }.MarkCreated();
         _dc.CoffeeMachines.Add(machine);
@@ -119,11 +119,11 @@ public class CoffeeMachinesService(DbCoffeePointContext _dc, IHttpClientFactory 
         if (machine == null)
             return "The machine not found";
 
-        if (machine.State != CoffeeMachineState.WaitingApprove)
+        if (machine.State != CoffeeMachineStates.WaitingApprove)
             return machine.Id;
         
         machine.MachineHealthCheckEndpointUrl = form.MachineHealthCheckEndpointUrl;
-        machine.State = CoffeeMachineState.Active;
+        machine.State = CoffeeMachineStates.Active;
 
         await _dc.SaveChangesAsync();
 
@@ -136,7 +136,7 @@ public class CoffeeMachinesService(DbCoffeePointContext _dc, IHttpClientFactory 
         if (machine == null)
             return "The machine not found";
 
-        machine.State = CoffeeMachineState.Unavailable;
+        machine.State = CoffeeMachineStates.Unavailable;
         
         await _dc.SaveChangesAsync();
 
@@ -149,7 +149,7 @@ public class CoffeeMachinesService(DbCoffeePointContext _dc, IHttpClientFactory 
         if (machine == null)
             return "The machine not found";
 
-        machine.State = CoffeeMachineState.Active;
+        machine.State = CoffeeMachineStates.Active;
         
         await _dc.SaveChangesAsync();
 

@@ -5,15 +5,10 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Cpb.Api.AspNetCore;
 
-public static class StartupExtenstions
+public static class StartupExtensions
 {
-    public static IServiceCollection AddCustomAuthentication(this IServiceCollection services,
-        ConfigurationManager configuration)
+    public static IServiceCollection AddCustomAuthentication(this IServiceCollection services, AuthOptions authOptions)
     {
-        var authOptions = configuration.GetSection(AuthOptions.Name).Get<AuthOptions>();
-        if (authOptions is null)
-            throw new ArgumentNullException($"Cannot get {nameof(AuthOptions)}");
-
         services.AddAuthentication(options =>
         {
             options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

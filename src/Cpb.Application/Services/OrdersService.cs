@@ -2,6 +2,7 @@
 using Cpb.Database.Entities;
 using Cpb.Domain;
 using CSharpFunctionalExtensions;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 
 namespace Cpb.Application.Services;
@@ -28,6 +29,21 @@ public class OrdersService(DbCoffeePointContext _dc, CoffeeRecipesService _recip
         var increasing = await _recipesService.IncreaseOrderedRecipeCount(form.RecipeId);
         if(increasing.IsFailure)
             Log.Warning("A order with id {0} was created, but increasing ordered recipe count failed.", order.Id);
+
+        return order.Id;
+    }
+
+    public async Task<Result<Guid, string>> StartBrewingCoffee(CoffeeStartedBrewingEvent form)
+    {
+        var order = await _dc.Orders.FirstOrDefaultAsync(u => u.Id == form.OrderId);
+        if (order == null)
+            return $"The order with id {form.OrderId} is not found";
+
+        if (order.State != OrderStates.InOrder)
+            return $"The order({form.OrderId}) state has to be '{OrderStates.InOrder}', but now it's {order.State}";
+
+        order.State = OrderStates.IsBrewing;
+        await _dc.SaveChangesAsync();
 
         return order.Id;
     }

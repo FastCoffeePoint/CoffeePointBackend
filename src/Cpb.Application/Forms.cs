@@ -1,16 +1,11 @@
-﻿namespace Cpb.Application;
+﻿using Cpb.Common.Kafka;
+
+namespace Cpb.Application;
 
 // Auth
-public record RegisterUserForm(
-    string FirstName,
-    string LastName,
-    string Email,
-    string Password);
-
+public record RegisterUserForm(string FirstName, string LastName, string Email, string Password);
 public record LoginUserForm(string Email, string Password);
 public record AuthResponse(Guid UserId, string JwtToken);
-
-
 
 
 // Ingredient
@@ -30,3 +25,8 @@ public record RemoveIngredientFromMachineForm(Guid MachineId, Guid IngredientId)
 
 // Orders
 public record OrderCoffeeForm(Guid RecipeId);
+
+public record CoffeeStartedBrewingEvent(Guid OrderId): IEvent
+{
+    public static string Name => "CoffeeStartedBrewingEvent";
+}

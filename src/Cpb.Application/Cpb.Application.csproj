@@ -8,6 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\Cpb.Common\Cpb.Common.csproj" />
       <ProjectReference Include="..\Cpb.Database\Cpb.Database.csproj" />
     </ItemGroup>
 

@@ -60,7 +60,7 @@ public class KafkaConsumerBackgroundJob<TEvent> : BackgroundService where TEvent
                     continue;
                 }
                 
-                var handler = _serviceProvider.GetService<IEventHandler<TEvent>>();
+                var handler = _serviceProvider.GetService<KafkaEventHandler<TEvent>>();
                 if (handler == null)
                     throw new Exception($"Event handler for {typeof(TEvent)} wasn't registered");
 
