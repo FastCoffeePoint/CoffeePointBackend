@@ -13,7 +13,7 @@ public enum OrderStates
     /// <summary>
     /// A coffee is ready to be gotten by a customer.
     /// </summary>
-    IsReadyToBeServed = 2,
+    IsReadyToBeGotten = 2,
     /// <summary>
     /// A coffee has gotten by a customer.
     /// </summary>

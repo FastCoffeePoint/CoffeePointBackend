@@ -12,6 +12,7 @@ public class CoffeeMachinesService(DbCoffeePointContext _dc, IHttpClientFactory 
 {
     public async Task<ImmutableList<CoffeeMachine>> GetCoffeeMachines()
     {
+        //TODO: rewrite, look at coffee recipes method
         var rawEntities = await _dc.CoffeeMachines
             .ExcludeDeleted()
             .Join(_dc.CoffeeMachineIngredients, 
@@ -40,6 +41,11 @@ public class CoffeeMachinesService(DbCoffeePointContext _dc, IHttpClientFactory 
         
 
         return mappedList;
+    }
+    
+    public async Task<Result<Guid, string>> ActualizeIngredientsAmount(Guid machineId, ImmutableList<CoffeeMachineIngredientForm> ingredients)
+    {
+        return null;
     }
     
     public async Task<Result<Guid, string>> RegisterCoffeeMachine(RegisterCoffeeMachineForm form)

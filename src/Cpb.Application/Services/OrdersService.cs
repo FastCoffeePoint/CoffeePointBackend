@@ -1,4 +1,5 @@
-﻿using Cpb.Database;
+﻿using Cpb.Common.Kafka;
+using Cpb.Database;
 using Cpb.Database.Entities;
 using Cpb.Domain;
 using CSharpFunctionalExtensions;
@@ -7,7 +8,10 @@ using Serilog;
 
 namespace Cpb.Application.Services;
 
-public class OrdersService(DbCoffeePointContext _dc, CoffeeRecipesService _recipesService)
+public class OrdersService(DbCoffeePointContext _dc, 
+    CoffeeMachinesService _machinesService,
+    CoffeeRecipesService _recipesService,
+    IKafkaProducer _kafkaProducer)
 {
     public async Task<Result<Guid, string>> OrderCoffee(Actor actor, OrderCoffeeForm form)
     {
@@ -30,6 +34,8 @@ public class OrdersService(DbCoffeePointContext _dc, CoffeeRecipesService _recip
         if(increasing.IsFailure)
             Log.Warning("A order with id {0} was created, but increasing ordered recipe count failed.", order.Id);
 
+        await _kafkaProducer.Push(new CoffeeWasOrderedEvent(order.Id, order.CoffeeRecipeId));
+
         return order.Id;
     }
 
@@ -44,7 +50,28 @@ public class OrdersService(DbCoffeePointContext _dc, CoffeeRecipesService _recip
 
         order.State = OrderStates.IsBrewing;
         await _dc.SaveChangesAsync();
+        
+        //TODO: Here should be a notification to a customer like: Go to a coffee machine, because your coffee will be made in 3 minutes!
 
         return order.Id;
+    }
+
+    public async Task<Result<Guid, string>> MarkOrderAsReadyToBeGotten(CoffeeIsReadyToBeGottenEvent form)
+    {
+        var order = await _dc.Orders.FirstOrDefaultAsync(u => u.Id == form.OrderId);
+        if (order == null)
+            return $"The order with id {form.OrderId} is not found";
+
+        if (order.State != OrderStates.IsBrewing)
+            return $"The order({form.OrderId}) state has to be '{OrderStates.IsBrewing}', but now it's {order.State}";
+        
+        order.State = OrderStates.IsReadyToBeGotten;
+        await _dc.SaveChangesAsync();
+
+        var actualizing = await _machinesService.ActualizeIngredientsAmount(form.MachineId, form.Ingredients);
+        if (actualizing.IsFailure)
+            return actualizing.Error;
+
+        return null;
     }
 }
