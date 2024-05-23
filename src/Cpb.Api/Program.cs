@@ -23,6 +23,7 @@ builder.Services.AddScoped<CoffeeMachinesService>();
 builder.Services.AddScoped<OrdersService>();
 
 // Kafka
+builder.Services.AddKafka();
 builder.Services.AddConsumer<CoffeeStartedBrewingEvent, CoffeeStartedBrewingEventHandler>(GetConfigurationOnRun<KafkaOptions>());
 builder.Services.AddConsumer<CoffeeIsReadyToBeGottenEvent, CoffeeIsReadyToBeGottenEventHandler>(GetConfigurationOnRun<KafkaOptions>());
 builder.Services.AddProducer<CoffeeWasOrderedEvent>(GetConfigurationOnRun<KafkaOptions>());

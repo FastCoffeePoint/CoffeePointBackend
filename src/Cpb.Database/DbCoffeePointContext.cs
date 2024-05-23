@@ -11,14 +11,17 @@ public class DbCoffeePointContext : DbContext
     }
 
     public DbSet<DbUser> Users { get; set; }
-
+    
+    public DbSet<DbIngredient> Ingredients { get; set; }
+    
     public DbSet<DbCoffeeMachine> CoffeeMachines { get; set; }
     public DbSet<DbCoffeeMachineIngredient> CoffeeMachineIngredients { get; set; }
-    public DbSet<DbIngredient> Ingredients { get; set; }
+    
     public DbSet<DbCoffeeRecipe> CoffeeRecipes  { get; set; }
     public DbSet<DbCoffeeRecipeIngredient> CoffeeRecipeIngredients  { get; set; }
 
     public DbSet<DbOrder> Orders { get; set; }
+    public DbSet<DbLockedIngredient> LockedIngredients { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

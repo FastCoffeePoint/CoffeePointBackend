@@ -7,37 +7,29 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Cpb.Application.Services;
 
-public class CoffeeRecipesService(DbCoffeePointContext _dc, CoffeeMachinesService _machinesService)
+public class CoffeeRecipesService(DbCoffeePointContext _dc)
 {
-    public async Task<ImmutableList<CustomerCoffeeRecipe>> GetAvailableToOrderRecipes()
+    public async Task<Result<Guid, string>> LockIngredientForRecipe(Guid orderId, Guid recipeId)
     {
-        var machines = await _machinesService.GetCoffeeMachines();
-        var recipes = await GetCoffeeRecipes();
+        var ingredients = await _dc.CoffeeRecipeIngredients
+            .AsNoTracking()
+            .Where(u => u.CoffeeRecipeId == recipeId)
+            .ToListAsync();
 
-        var result = new List<CustomerCoffeeRecipe>();
-        foreach (var recipe in recipes)
-        {
-            var totalAvailable = 0;
-            foreach (var machine in machines)
+        var lockedIngredients = ingredients
+            .Select(u => new DbLockedIngredient
             {
-                List<(int Amount, CoffeeRecipeIngredient Ingredient)> amountByIngredients = recipe.Ingredients.Select(recipeIngredient =>
-                {
-                    var machineIngredient = machine.Ingredients.FirstOrDefault(k => recipeIngredient.Id == k.Id);
-                    if (machineIngredient == null)
-                        return (0, recipeIngredient); 
-                    
-                    var availableIngredients = machineIngredient.Amount / recipeIngredient.Amount;
-                    return (availableIngredients, recipeIngredient);
-                }).ToList();
+                OrderId = orderId, 
+                IngredientId = u.IngredientId, 
+                LockedAmount = u.Amount,
+                RecipeId = recipeId,
+            }.MarkCreated())
+            .ToList();
 
-                var minAmount = amountByIngredients.MinBy(u => u.Amount);
-                totalAvailable += minAmount.Amount;
-            }
-            
-            result.Add(new CustomerCoffeeRecipe(recipe.Id, recipe.Name, totalAvailable, recipe.Ingredients));
-        }
+        _dc.LockedIngredients.AddRange(lockedIngredients);
+        await _dc.SaveChangesAsync();
 
-        return result.ToImmutableList();
+        return orderId;
     }
     
     public async Task<ImmutableList<CoffeeRecipe>> GetCoffeeRecipes()
@@ -135,6 +127,12 @@ public class CoffeeRecipesService(DbCoffeePointContext _dc, CoffeeMachinesServic
 
         return coffeeRecipe.Id;
     }
+
+    public async Task<ImmutableList<LockedRecipe>> GetLockedRecipes() => await _dc.LockedIngredients
+        .ExcludeDeleted()
+        .GroupBy(u => new { u.RecipeId, u.OrderId })
+        .Select(u => new LockedRecipe(u.Key.OrderId, u.Key.RecipeId))
+        .ToImmutableListAsync();
 
     public async Task<Result<Guid, string>> DeleteCoffeeRecipe(Guid recipeId)
     {

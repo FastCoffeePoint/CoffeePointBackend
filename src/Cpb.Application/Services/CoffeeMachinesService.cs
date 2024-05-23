@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Cpb.Application.Services;
 
-public class CoffeeMachinesService(DbCoffeePointContext _dc, IHttpClientFactory _httpFactory)
+public class CoffeeMachinesService(DbCoffeePointContext _dc, CoffeeRecipesService _recipesService, IHttpClientFactory _httpFactory)
 {
     public async Task<ImmutableList<CoffeeMachine>> GetCoffeeMachines()
     {
@@ -45,8 +45,17 @@ public class CoffeeMachinesService(DbCoffeePointContext _dc, IHttpClientFactory 
     
     public async Task<Result<Guid, string>> ActualizeIngredientsAmount(Guid machineId, ImmutableList<CoffeeMachineIngredientForm> ingredients)
     {
+        var ingredientIds = ingredients.Select(u => u.Id).ToList();
+        var entities = await _dc.CoffeeMachineIngredients
+            .Where(u => u.CoffeeMachineId == machineId && ingredientIds.Contains(u.IngredientId))
+            .ToListAsync();
+        
+        
+        
         return null;
     }
+    
+
     
     public async Task<Result<Guid, string>> RegisterCoffeeMachine(RegisterCoffeeMachineForm form)
     {

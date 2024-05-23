@@ -1,4 +1,5 @@
-﻿using Cpb.Api.AspNetCore;
+﻿using System.Collections.Immutable;
+using Cpb.Api.AspNetCore;
 using Cpb.Application;
 using Cpb.Application.Services;
 using Cpb.Domain;
@@ -12,4 +13,8 @@ public class OrdersController(OrdersService _ordersService) : CoffeePointControl
     [HttpPost(DefaultUrl)]
     public async Task<JsonResult<Guid, string>> OrderCoffee(OrderCoffeeForm form) => 
         await _ordersService.OrderCoffee(Actor, form);
+    
+    [HttpGet(DefaultUrl)]
+    public async Task<ImmutableList<CustomerCoffeeRecipe>> GetAvailableToOrderRecipes() => 
+        await _ordersService.GetAvailableToOrderRecipes(); 
 }

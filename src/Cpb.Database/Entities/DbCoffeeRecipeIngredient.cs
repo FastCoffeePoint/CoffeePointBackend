@@ -8,5 +8,8 @@ public class DbCoffeeRecipeIngredient
     public DbIngredient Ingredient { get; set; }
     public Guid IngredientId { get; set; }
 
+    /// <summary>
+    /// How many ingredients we need to make a recipe.
+    /// </summary>
     public int Amount { get; set; }
 }

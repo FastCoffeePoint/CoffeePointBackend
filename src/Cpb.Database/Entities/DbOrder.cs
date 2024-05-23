@@ -13,4 +13,6 @@ public class DbOrder: DbEntity
 
     public Guid UserId { get; set; }
     public DbUser User { get; set; }
+
+    public List<DbLockedIngredient> LockedIngredients { get; set; }
 }
