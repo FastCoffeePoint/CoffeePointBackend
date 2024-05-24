@@ -8,40 +8,30 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Cpb.Application.Services;
 
-public class CoffeeMachinesService(DbCoffeePointContext _dc, CoffeeRecipesService _recipesService, IHttpClientFactory _httpFactory)
+public class CoffeeMachinesService(DbCoffeePointContext _dc, IHttpClientFactory _httpFactory)
 {
     public async Task<ImmutableList<CoffeeMachine>> GetCoffeeMachines()
     {
-        //TODO: rewrite, look at coffee recipes method
-        var rawEntities = await _dc.CoffeeMachines
-            .ExcludeDeleted()
-            .Join(_dc.CoffeeMachineIngredients, 
-                recipe => recipe.Id,
-                link => link.CoffeeMachineId, 
-                (recipe, link) => new { Recipe = recipe, Link = link }
-            )
-            .Join(_dc.Ingredients, 
-                recipeAndLink => recipeAndLink.Link.IngredientId, 
-                ingredient => ingredient.Id, 
-                (recipeAndLink, ingredient) => new 
-                {
-                    RecipeId = recipeAndLink.Recipe.Id,
-                    RecipeName = recipeAndLink.Recipe.Name,
-                    
-                    IngredientId = ingredient.Id,
-                    IngredientAmount = recipeAndLink.Link.Amount,
-                    IngredientName = ingredient.Name,
-                }
-            ).GroupBy(u => u.RecipeId)
+        var machines = await _dc.CoffeeMachines.ActualReadOnly()
+            .Include(u => u.Links)
             .ToListAsync();
 
-        var mappedList = rawEntities.Select(u => new CoffeeMachine(u.Key, u.First().RecipeName,
-                u.Select(v => new CoffeeMachineIngredient(v.IngredientId, v.RecipeName, v.IngredientAmount)).ToImmutableList()))
-            .ToImmutableList();
-        
+        var machineIds = machines.SelectMany(u => u.Links.Select(v => v.IngredientId))
+            .Distinct()
+            .ToList();
+        var ingredients = await _dc.Ingredients.ActualReadOnly()
+            .Where(u => machineIds.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id);
 
-        return mappedList;
+        var result = machines.Select(u => 
+                new CoffeeMachine(u.Id, u.Name, u.Links.Select(v => Map(ingredients[v.IngredientId], v)).ToImmutableList()))
+            .ToImmutableList();
+
+        return result;
     }
+    
+    private CoffeeMachineIngredient Map(DbIngredient model, DbCoffeeMachineIngredient link) =>
+        new(model.Id, model.Name, link.Amount);
     
     public async Task<Result> ActualizeIngredientsAmount(Guid machineId, ImmutableList<CoffeeMachineIngredientForm> ingredients)
     {
@@ -54,8 +44,6 @@ public class CoffeeMachinesService(DbCoffeePointContext _dc, CoffeeRecipesServic
         
         return Result.Success();
     }
-    
-
     
     public async Task<Result<Guid, string>> RegisterCoffeeMachine(RegisterCoffeeMachineForm form)
     {
