@@ -2,6 +2,8 @@
 
 public class DbLockedIngredient: DbEntity
 {
+    public Guid Id { get; set; }
+    
     public Guid OrderId { get; set; }
     public DbOrder Order { get; set; }
 

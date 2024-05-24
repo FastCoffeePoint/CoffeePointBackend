@@ -34,21 +34,21 @@ public class IngredientsService(DbCoffeePointContext _dc)
         return ingredient.Id;
     }
 
-    public async Task<Result<Guid, string>> Delete(Guid ingredientId)
+    public async Task<Result> Delete(Guid ingredientId)
     {
         var ingredient = await _dc.Ingredients.FirstOrDefaultAsync(u => u.Id == ingredientId);
         if (ingredient == null)
-            return "A ingredient is not found";
+            return Result.Failure("A ingredient is not found");
         if (ingredient.IsDeleted)
-            return ingredientId;
+            return Result.Success();
 
         var anyCoffeeRecipeHasIngredient =  await _dc.CoffeeRecipeIngredients.AnyAsync(u => u.IngredientId == ingredientId);
         if (anyCoffeeRecipeHasIngredient)
-            return "Any coffee recipe has the ingredient, so that you can't delete this.";
+            return Result.Failure("Any coffee recipe has the ingredient, so that you can't delete this.");
 
         ingredient.MarkDeleted();
         await _dc.SaveChangesAsync();
 
-        return ingredientId;
+        return Result.Success();
     }
 }

@@ -8,11 +8,11 @@ namespace Cpb.Api.Controllers;
 public class CoffeeMachinesController(CoffeeMachinesService _machinesService) : CoffeePointController
 {
     [HttpPut(DefaultUrl)]
-    public async Task<JsonResult<Guid, string>> SetIngredientInMachine(SetIngredientInMachineForm form) => 
+    public async Task<JsonOptionError> SetIngredientInMachine(SetIngredientInMachineForm form) => 
         await _machinesService.SetIngredientInMachine(form);
     
     [HttpDelete(DefaultUrl)]
-    public async Task<JsonResult<Guid, string>> RemoveIngredientFromMachine(RemoveIngredientFromMachineForm form) => 
+    public async Task<JsonOptionError> RemoveIngredientFromMachine(RemoveIngredientFromMachineForm form) => 
         await _machinesService.RemoveIngredientFromMachine(form);
     
     [HttpPost(DefaultUrl)]
@@ -20,6 +20,6 @@ public class CoffeeMachinesController(CoffeeMachinesService _machinesService) : 
         await _machinesService.RegisterCoffeeMachine(form);
     
     [HttpPost(DefaultUrl)]
-    public async Task<JsonResult<Guid, string>> ApproveMachine(ApproveCoffeeMachineForm form) => 
+    public async Task<JsonOptionError> ApproveMachine(ApproveCoffeeMachineForm form) => 
         await _machinesService.ApproveMachine(form);
 }

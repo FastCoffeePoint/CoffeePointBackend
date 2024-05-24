@@ -18,8 +18,12 @@ public class OrdersService(DbCoffeePointContext _dc,
     {
         var machines = await _machinesService.GetCoffeeMachines();
         var recipes = await _recipesService.GetCoffeeRecipes();
+        var lockedRecipes = await _recipesService.GetLockedRecipes();
+        var lockedRecipeCounts = lockedRecipes.GroupBy(u => u.RecipeId)
+            .Select(u => (RecipeId: u.Key, Count: u.Count()))
+            .ToDictionary(u => u.RecipeId);
 
-        var result = new List<CustomerCoffeeRecipe>();
+        var availableRecipes = new List<CustomerCoffeeRecipe>();
         foreach (var recipe in recipes)
         {
             var totalAvailable = 0;
@@ -39,13 +43,15 @@ public class OrdersService(DbCoffeePointContext _dc,
                 totalAvailable += minAmount.Amount;
             }
             
-            result.Add(new CustomerCoffeeRecipe(recipe.Id, recipe.Name, totalAvailable, recipe.Ingredients));
+            var exist = lockedRecipeCounts.TryGetValue(recipe.Id, out var locked);
+            if (exist)
+                totalAvailable -= locked.Count;
+                
+            availableRecipes.Add(new CustomerCoffeeRecipe(recipe.Id, recipe.Name, totalAvailable, recipe.Ingredients));
         }
 
-        var lockedRecipes = await _recipesService.GetLockedRecipes();
         
-
-        return result.ToImmutableList();
+        return availableRecipes.ToImmutableList();
     }
     
     public async Task<Result<Guid, string>> OrderCoffee(Actor actor, OrderCoffeeForm form)
@@ -65,7 +71,7 @@ public class OrdersService(DbCoffeePointContext _dc,
         _dc.Orders.Add(order);
         await _dc.SaveChangesAsync();
 
-        var locking = await _recipesService.LockIngredientForRecipe(order.Id, order.CoffeeRecipeId);
+        var locking = await _recipesService.LockOrderIngredients(order.Id, order.CoffeeRecipeId);
         if(locking.IsFailure)
             Log.Warning("A order with id {0} was created, but locking ingredients failed.", order.Id);
 
@@ -78,39 +84,41 @@ public class OrdersService(DbCoffeePointContext _dc,
         return order.Id;
     }
 
-    public async Task<Result<Guid, string>> StartBrewingCoffee(CoffeeStartedBrewingEvent form)
+    public async Task<Result> StartBrewingCoffee(CoffeeStartedBrewingEvent form)
     {
         var order = await _dc.Orders.FirstOrDefaultAsync(u => u.Id == form.OrderId);
         if (order == null)
-            return $"The order with id {form.OrderId} is not found";
+            return Result.Failure($"The order with id {form.OrderId} is not found");
 
         if (order.State != OrderStates.InOrder)
-            return $"The order({form.OrderId}) state has to be '{OrderStates.InOrder}', but now it's {order.State}";
+            return Result.Failure($"The order({form.OrderId}) state has to be '{OrderStates.InOrder}', but now it's {order.State}");
 
         order.State = OrderStates.IsBrewing;
         await _dc.SaveChangesAsync();
         
         //TODO: Here should be a notification to a customer like: Go to a coffee machine, because your coffee will be made in 3 minutes!
 
-        return order.Id;
+        return Result.Success();
     }
 
-    public async Task<Result<Guid, string>> MarkOrderAsReadyToBeGotten(CoffeeIsReadyToBeGottenEvent form)
+    public async Task<Result> MarkOrderAsReadyToBeGotten(CoffeeIsReadyToBeGottenEvent form)
     {
         var order = await _dc.Orders.FirstOrDefaultAsync(u => u.Id == form.OrderId);
         if (order == null)
-            return $"The order with id {form.OrderId} is not found";
+            return Result.Failure($"The order with id {form.OrderId} is not found");
 
         if (order.State != OrderStates.IsBrewing)
-            return $"The order({form.OrderId}) state has to be '{OrderStates.IsBrewing}', but now it's {order.State}";
+            return Result.Failure($"The order({form.OrderId}) state has to be '{OrderStates.IsBrewing}', but now it's {order.State}");
         
         order.State = OrderStates.IsReadyToBeGotten;
         await _dc.SaveChangesAsync();
 
-        var actualizing = await _machinesService.ActualizeIngredientsAmount(form.MachineId, form.Ingredients);
-        if (actualizing.IsFailure)
-            return actualizing.Error;
+        var actualizingIngredients = await _machinesService.ActualizeIngredientsAmount(form.MachineId, form.Ingredients);
+        var releasingIngredients = await _recipesService.ReleaseOrderIngredient(order.Id);
+        var decreasingRecipeCount = await _recipesService.DecreaseOrderedRecipeCount(order.CoffeeRecipeId);
 
-        return form.OrderId;
+        var result = Result.Combine(actualizingIngredients, releasingIngredients, decreasingRecipeCount);
+
+        return result;
     }
 }

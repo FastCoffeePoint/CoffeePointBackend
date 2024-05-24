@@ -1,7 +1,6 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using System.Text.Json;
 using Cpb.Application.Configurations;
 using Cpb.Database;
 using Cpb.Database.Entities;

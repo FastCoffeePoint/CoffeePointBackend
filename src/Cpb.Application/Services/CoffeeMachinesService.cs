@@ -43,7 +43,7 @@ public class CoffeeMachinesService(DbCoffeePointContext _dc, CoffeeRecipesServic
         return mappedList;
     }
     
-    public async Task<Result<Guid, string>> ActualizeIngredientsAmount(Guid machineId, ImmutableList<CoffeeMachineIngredientForm> ingredients)
+    public async Task<Result> ActualizeIngredientsAmount(Guid machineId, ImmutableList<CoffeeMachineIngredientForm> ingredients)
     {
         var ingredientIds = ingredients.Select(u => u.Id).ToList();
         var entities = await _dc.CoffeeMachineIngredients
@@ -52,7 +52,7 @@ public class CoffeeMachinesService(DbCoffeePointContext _dc, CoffeeRecipesServic
         
         
         
-        return null;
+        return Result.Success();
     }
     
 
@@ -74,15 +74,15 @@ public class CoffeeMachinesService(DbCoffeePointContext _dc, CoffeeRecipesServic
         return machine.Id;
     }
     
-    public async Task<Result<Guid, string>> SetIngredientInMachine(SetIngredientInMachineForm form)
+    public async Task<Result> SetIngredientInMachine(SetIngredientInMachineForm form)
     {
         var recipeExist = await _dc.CoffeeMachines.ExcludeDeleted().AnyAsync(u => u.Id == form.MachineId);
         if (!recipeExist)
-            return "The recipe is not found";
+            return Result.Failure("The recipe is not found");
         
         var ingredientExist = await _dc.Ingredients.ExcludeDeleted().AnyAsync(u => u.Id == form.IngredientId);
         if (!ingredientExist)
-            return "The ingredient is not found";
+            return Result.Failure("The ingredient is not found");
 
         var link = await _dc.CoffeeMachineIngredients.FirstOrDefaultAsync(u =>
             u.CoffeeMachineId == form.MachineId && u.IngredientId == form.IngredientId);
@@ -100,75 +100,75 @@ public class CoffeeMachinesService(DbCoffeePointContext _dc, CoffeeRecipesServic
         link.Amount = form.Amount;
         await _dc.SaveChangesAsync();
 
-        return link.CoffeeMachineId;
+        return Result.Success();
     }
     
-    public async Task<Result<Guid, string>> RemoveIngredientFromMachine(RemoveIngredientFromMachineForm form)
+    public async Task<Result> RemoveIngredientFromMachine(RemoveIngredientFromMachineForm form)
     {
         var recipeExist = await _dc.CoffeeMachines.ExcludeDeleted().AnyAsync(u => u.Id == form.MachineId);
         if (!recipeExist)
-            return "The recipe is not found";
+            return Result.Failure("The recipe is not found");
         
         var ingredientExist = await _dc.Ingredients.ExcludeDeleted().AnyAsync(u => u.Id == form.IngredientId);
         if (!ingredientExist)
-            return "The ingredient is not found";
+            return Result.Failure("The ingredient is not found");
 
         var link = await _dc.CoffeeMachineIngredients.FirstOrDefaultAsync(u =>
             u.CoffeeMachineId == form.MachineId && u.IngredientId == form.IngredientId);
 
         if (link == null)
-            return form.MachineId;
+            return Result.Success();
 
         _dc.CoffeeMachineIngredients.Remove(link);
         await _dc.SaveChangesAsync();
 
-        return link.CoffeeMachineId;
+        return Result.Success();
     }
 
-    public async Task<Result<Guid, string>> ApproveMachine(ApproveCoffeeMachineForm form)
+    public async Task<Result> ApproveMachine(ApproveCoffeeMachineForm form)
     {
         if (Uri.TryCreate(form.MachineHealthCheckEndpointUrl, UriKind.Absolute, out _))
-            return "Uri is invalid";
+            return Result.Failure("Uri is invalid");
         
         var machine = await _dc.CoffeeMachines.FirstOrDefaultAsync(u => u.Id == form.MachineId);
         if (machine == null)
-            return "The machine not found";
+            return Result.Failure("The machine not found");
 
         if (machine.State != CoffeeMachineStates.WaitingApprove)
-            return machine.Id;
+            return Result.Success();
         
         machine.MachineHealthCheckEndpointUrl = form.MachineHealthCheckEndpointUrl;
         machine.State = CoffeeMachineStates.Active;
 
         await _dc.SaveChangesAsync();
 
-        return machine.Id;
+        return Result.Success();
     }
 
-    public async Task<Result<Guid, string>> MakeMachineUnavailable(Guid machineId)
+    public async Task<Result> MakeMachineUnavailable(Guid machineId)
     {
         var machine = await _dc.CoffeeMachines.FirstOrDefaultAsync(u => u.Id == machineId);
         if (machine == null)
-            return "The machine not found";
+            return Result.Failure("The machine not found");
 
         machine.State = CoffeeMachineStates.Unavailable;
         
         await _dc.SaveChangesAsync();
 
-        return machine.Id;
+        return Result.Success();
     }
     
-    public async Task<Result<Guid, string>> MakeMachineActive(Guid machineId)
+    public async Task<Result> MakeMachineActive(Guid machineId)
     {
         var machine = await _dc.CoffeeMachines.FirstOrDefaultAsync(u => u.Id == machineId);
         if (machine == null)
-            return "The machine not found";
+            return Result.Failure("The machine not found");
 
         machine.State = CoffeeMachineStates.Active;
         
         await _dc.SaveChangesAsync();
 
-        return machine.Id;
+        return Result.Success();
     }
 
     public async Task RunCoffeeMachineObservers()

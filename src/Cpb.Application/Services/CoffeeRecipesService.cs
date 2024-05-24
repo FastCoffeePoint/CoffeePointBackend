@@ -9,7 +9,7 @@ namespace Cpb.Application.Services;
 
 public class CoffeeRecipesService(DbCoffeePointContext _dc)
 {
-    public async Task<Result<Guid, string>> LockIngredientForRecipe(Guid orderId, Guid recipeId)
+    public async Task<Result> LockOrderIngredients(Guid orderId, Guid recipeId)
     {
         var ingredients = await _dc.CoffeeRecipeIngredients
             .AsNoTracking()
@@ -29,21 +29,33 @@ public class CoffeeRecipesService(DbCoffeePointContext _dc)
         _dc.LockedIngredients.AddRange(lockedIngredients);
         await _dc.SaveChangesAsync();
 
-        return orderId;
+        return Result.Success();
+    }
+    
+    public async Task<Result> ReleaseOrderIngredient(Guid orderId)
+    {
+        var lockedIngredients = await _dc.LockedIngredients
+            .Where(u => u.OrderId == orderId)
+            .ToListAsync();
+
+        foreach (var ingredient in lockedIngredients)
+            ingredient.MarkDeleted();
+        
+        await _dc.SaveChangesAsync();
+
+        return Result.Success();
     }
     
     public async Task<ImmutableList<CoffeeRecipe>> GetCoffeeRecipes()
     { 
-        var recipes = await _dc.CoffeeRecipes.ExcludeDeleted()
-            .AsNoTracking()
+        var recipes = await _dc.CoffeeRecipes.ActualReadOnly()
             .Include(u => u.Links)
             .ToListAsync();
 
         var ingredientIds = recipes.SelectMany(u => u.Links.Select(v => v.IngredientId))
             .Distinct()
             .ToList();
-        var ingredients = await _dc.Ingredients.ExcludeDeleted()
-            .AsNoTracking()
+        var ingredients = await _dc.Ingredients.ActualReadOnly()
             .Where(u => ingredientIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id);
 
@@ -57,15 +69,15 @@ public class CoffeeRecipesService(DbCoffeePointContext _dc)
     private CoffeeRecipeIngredient Map(DbIngredient model, DbCoffeeRecipeIngredient link) =>
         new(model.Id, model.Name, link.Amount);
     
-    public async Task<Result<Guid, string>> SetIngredientInRecipe(SetIngredientInRecipeForm form)
+    public async Task<Result> SetIngredientInRecipe(SetIngredientInRecipeForm form)
     {
         var recipeExist = await _dc.CoffeeRecipes.ExcludeDeleted().AnyAsync(u => u.Id == form.RecipeId);
         if (!recipeExist)
-            return "The recipe is not found";
+            return Result.Failure("The recipe is not found");
         
         var ingredientExist = await _dc.Ingredients.ExcludeDeleted().AnyAsync(u => u.Id == form.IngredientId);
         if (!ingredientExist)
-            return "The ingredient is not found";
+            return Result.Failure("The ingredient is not found");
 
         var link = await _dc.CoffeeRecipeIngredients.FirstOrDefaultAsync(u =>
             u.CoffeeRecipeId == form.RecipeId && u.IngredientId == form.IngredientId);
@@ -83,29 +95,29 @@ public class CoffeeRecipesService(DbCoffeePointContext _dc)
         link.Amount = form.Amount;
         await _dc.SaveChangesAsync();
 
-        return link.CoffeeRecipeId;
+        return Result.Success();
     }
     
-    public async Task<Result<Guid, string>> RemoveIngredientFromRecipe(RemoveIngredientFromRecipeForm form)
+    public async Task<Result> RemoveIngredientFromRecipe(RemoveIngredientFromRecipeForm form)
     {
         var recipeExist = await _dc.CoffeeRecipes.ExcludeDeleted().AnyAsync(u => u.Id == form.RecipeId);
         if (!recipeExist)
-            return "The recipe is not found";
+            return Result.Failure("The recipe is not found");
         
         var ingredientExist = await _dc.Ingredients.ExcludeDeleted().AnyAsync(u => u.Id == form.IngredientId);
         if (!ingredientExist)
-            return "The ingredient is not found";
+            return Result.Failure("The ingredient is not found");
 
         var link = await _dc.CoffeeRecipeIngredients.FirstOrDefaultAsync(u =>
             u.CoffeeRecipeId == form.RecipeId && u.IngredientId == form.IngredientId);
 
         if (link == null)
-            return form.RecipeId;
+            return Result.Success();
 
         _dc.CoffeeRecipeIngredients.Remove(link);
         await _dc.SaveChangesAsync();
 
-        return link.CoffeeRecipeId;
+        return Result.Success();
     }
     
     public async Task<Result<Guid, string>> CreateCoffeeRecipe(CreateCoffeeRecipe form)
@@ -134,13 +146,13 @@ public class CoffeeRecipesService(DbCoffeePointContext _dc)
         .Select(u => new LockedRecipe(u.Key.OrderId, u.Key.RecipeId))
         .ToImmutableListAsync();
 
-    public async Task<Result<Guid, string>> DeleteCoffeeRecipe(Guid recipeId)
+    public async Task<Result> DeleteCoffeeRecipe(Guid recipeId)
     {
         var recipe = await _dc.CoffeeRecipes.ExcludeDeleted().FirstOrDefaultAsync(u => u.Id == recipeId);
         if (recipe == null)
-            return "A recipe is not found";
+            return Result.Failure("A recipe is not found");
         if (recipe.IsDeleted)
-            return recipeId;
+            return Result.Success();
 
         recipe.MarkDeleted();
         var linkEntities = await _dc.CoffeeRecipeIngredients
@@ -149,30 +161,30 @@ public class CoffeeRecipesService(DbCoffeePointContext _dc)
         _dc.CoffeeRecipeIngredients.RemoveRange(linkEntities);
         await _dc.SaveChangesAsync();
 
-        return recipeId;
+        return Result.Success();
     }
 
-    public async Task<Result<Guid, string>> IncreaseOrderedRecipeCount(Guid recipeId)
+    public async Task<Result> IncreaseOrderedRecipeCount(Guid recipeId)
     {
-        var recipe = await _dc.CoffeeRecipes.FirstOrDefaultAsync(u => u.Id == recipeId);
+        var recipe = await _dc.CoffeeRecipes.ActualReadOnly().FirstOrDefaultAsync(u => u.Id == recipeId);
         if (recipe == null)
-            return "Not a single recipe was found";
+            return Result.Failure("Not a single recipe was found");
 
         recipe.CurrentOrdersCount++;
         await _dc.SaveChangesAsync();
 
-        return recipeId;
+        return Result.Success();
     }
     
-    public async Task<Result<Guid, string>> DecreaseOrderedRecipeCount(Guid recipeId)
+    public async Task<Result> DecreaseOrderedRecipeCount(Guid recipeId)
     {
-        var recipe = await _dc.CoffeeRecipes.FirstOrDefaultAsync(u => u.Id == recipeId);
+        var recipe = await _dc.CoffeeRecipes.ActualReadOnly().FirstOrDefaultAsync(u => u.Id == recipeId);
         if (recipe == null)
-            return "Not a single recipe was found";
+            return Result.Failure("Not a single recipe was found");
 
         recipe.CurrentOrdersCount--;
         await _dc.SaveChangesAsync();
 
-        return recipeId;
+        return Result.Success();
     }
 }

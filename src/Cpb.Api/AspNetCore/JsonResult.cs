@@ -19,3 +19,17 @@ public record JsonResult<TResult, TError>
         ? r.Result
         : r.Error;
 }
+
+
+public record JsonOptionError
+{
+    public string Error { get; init; }
+    public bool IsSuccess { get; init; }
+
+    public JsonOptionError()
+    { }
+
+    public static implicit operator JsonOptionError(Result r) => r.IsSuccess
+        ? new() { Error = default, IsSuccess = true }
+        : new() { Error = r.Error, IsSuccess = false };
+}

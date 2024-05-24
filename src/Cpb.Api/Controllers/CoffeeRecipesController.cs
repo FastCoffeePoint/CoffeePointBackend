@@ -14,15 +14,15 @@ public class CoffeeRecipesController(CoffeeRecipesService _coffeeRecipesService)
         await _coffeeRecipesService.CreateCoffeeRecipe(form);
     
     [HttpDelete(DefaultUrl)]
-    public async Task<JsonResult<Guid, string>> DeleteCoffeeRecipe(Guid recipeId) => 
+    public async Task<JsonOptionError> DeleteCoffeeRecipe(Guid recipeId) => 
         await _coffeeRecipesService.DeleteCoffeeRecipe(recipeId);
     
     [HttpPut(DefaultUrl)]
-    public async Task<JsonResult<Guid, string>> SetIngredientInRecipe(SetIngredientInRecipeForm setIngredientInRecipeForm) => 
+    public async Task<JsonOptionError> SetIngredientInRecipe(SetIngredientInRecipeForm setIngredientInRecipeForm) => 
         await _coffeeRecipesService.SetIngredientInRecipe(setIngredientInRecipeForm);
     
     [HttpDelete(DefaultUrl)]
-    public async Task<JsonResult<Guid, string>> RemoveIngredientFromRecipe(RemoveIngredientFromRecipeForm form) => 
+    public async Task<JsonOptionError> RemoveIngredientFromRecipe(RemoveIngredientFromRecipeForm form) => 
         await _coffeeRecipesService.RemoveIngredientFromRecipe(form); 
     
     [HttpGet(DefaultUrl)]

@@ -18,6 +18,6 @@ public class IngredientsController(IngredientsService _ingredientsService) : Cof
         await _ingredientsService.GetIngredients();
     
     [HttpDelete(DefaultUrl)]
-    public async Task<JsonResult<Guid, string>> DeleteIngredient(Guid ingredientId) => 
+    public async Task<JsonOptionError> DeleteIngredient(Guid ingredientId) => 
         await _ingredientsService.Delete(ingredientId);
 }
