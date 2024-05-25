@@ -31,9 +31,10 @@ builder.Services.AddConsumer<OrderHasBeenCompletedEvent, OrderHasBeenCompletedEv
 builder.Services.AddProducer<CoffeeWasOrderedEvent>(kafkaOptions);
 
 // Options
-builder.Services.Configure<DefaultAdminCredentials>(builder.Configuration.GetSection(DefaultAdminCredentials.Name));
+builder.Services.Configure<DefaultAdminOptions>(builder.Configuration.GetSection(DefaultAdminOptions.Name));
 builder.Services.Configure<AuthOptions>(builder.Configuration.GetSection(AuthOptions.Name));
 builder.Services.Configure<KafkaOptions>(builder.Configuration.GetSection(KafkaOptions.Name));
+builder.Services.Configure<BusinessOptions>(builder.Configuration.GetSection(BusinessOptions.Name));
 
 
 // Hangfire

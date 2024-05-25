@@ -1,5 +1,6 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using Cpb.Domain;
+using CSharpFunctionalExtensions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Cpb.Api.AspNetCore;
@@ -28,4 +29,8 @@ public class CoffeePointController : ControllerBase
 
         return _actor;
     }
+
+    protected static JsonResult<TResult, string> JsonResult<TResult>(Maybe<TResult> r) => r.HasValue
+        ? new() { Error = default, Result = r.Value, IsSuccess = true }
+        : new() { Error = $"A {nameof(TResult)} was not found", Result = default, IsSuccess = false };
 }

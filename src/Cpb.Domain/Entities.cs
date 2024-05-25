@@ -20,3 +20,4 @@ public record CoffeeMachineIngredient(Guid Id, string Name, int Amount);
 
 // Orders
 public record LockedRecipe(Guid OrderId, Guid RecipeId);
+public record Order(Guid Id, OrderStates State, Guid RecipeId, Guid UserId);

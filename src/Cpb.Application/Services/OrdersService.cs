@@ -112,8 +112,8 @@ public class OrdersService(DbCoffeePointContext _dc,
         
         order.State = OrderStates.IsReadyToBeGotten;
         await _dc.SaveChangesAsync();
-
-        var actualizingIngredients = await _machinesService.ActualizeIngredientsAmount(form.MachineId, form.Ingredients);
+        
+        var actualizingIngredients = await _machinesService.ActualizeIngredientsAmount(form.MachineId, order.CoffeeRecipeId, form.Ingredients);
         var releasingIngredients = await _recipesService.ReleaseOrderIngredient(order.Id);
         var decreasingRecipeCount = await _recipesService.DecreaseOrderedRecipeCount(order.CoffeeRecipeId);
 
@@ -136,4 +136,9 @@ public class OrdersService(DbCoffeePointContext _dc,
         
         return Result.Success();
     }
+
+    public async Task<Maybe<Order>> GetOrder(Guid id) => await _dc.Orders
+        .ActualReadOnly()
+        .Select(u => new Order(u.Id, u.State, u.CoffeeRecipeId, u.UserId))
+        .FirstOrDefaultAsync(u => u.Id == id);
 }

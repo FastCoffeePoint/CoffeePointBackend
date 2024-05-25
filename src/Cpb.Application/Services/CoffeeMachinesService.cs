@@ -1,14 +1,20 @@
 ﻿using System.Collections.Immutable;
+using Cpb.Application.Configurations;
 using Cpb.Database;
 using Cpb.Database.Entities;
 using Cpb.Domain;
 using CSharpFunctionalExtensions;
 using Hangfire;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using Serilog;
 
 namespace Cpb.Application.Services;
 
-public class CoffeeMachinesService(DbCoffeePointContext _dc, IHttpClientFactory _httpFactory)
+public class CoffeeMachinesService(DbCoffeePointContext _dc, 
+    IOptionsMonitor<BusinessOptions> _businessOptions,
+    CoffeeRecipesService _recipesService,
+    IHttpClientFactory _httpFactory)
 {
     public async Task<ImmutableList<CoffeeMachine>> GetCoffeeMachines()
     {
@@ -33,14 +39,53 @@ public class CoffeeMachinesService(DbCoffeePointContext _dc, IHttpClientFactory 
     private CoffeeMachineIngredient Map(DbIngredient model, DbCoffeeMachineIngredient link) =>
         new(model.Id, model.Name, link.Amount);
     
-    public async Task<Result> ActualizeIngredientsAmount(Guid machineId, ImmutableList<CoffeeMachineIngredientForm> ingredients)
+    public async Task<Result> ActualizeIngredientsAmount(Guid machineId, Guid recipeId, ImmutableList<CoffeeMachineIngredientForm> realIngredients)
     {
-        var ingredientIds = ingredients.Select(u => u.Id).ToList();
-        var entities = await _dc.CoffeeMachineIngredients
+        var ingredientIds = realIngredients.Select(u => u.Id).ToList();
+        var virtualIngredients = await _dc.CoffeeMachineIngredients
+            .ExcludeDeleted()
             .Where(u => u.CoffeeMachineId == machineId && ingredientIds.Contains(u.IngredientId))
-            .ToListAsync();
+            .ToDictionaryAsync(u => u.IngredientId);
+        var recipeIngredients = (await _recipesService.GetIngredients(recipeId))
+            .ToDictionary(u => u.Id);
         
-        
+
+        foreach (var realIngredient in realIngredients)
+        {
+            var virtualIngredientExist = virtualIngredients.TryGetValue(realIngredient.Id, out var virtualIngredient);
+            if (!virtualIngredientExist)
+            {
+                Log.Error("ACTUALIZING INGREDIENTS: A ingredient with a id {0} in a coffee machine with a id {1} can't be found in our database.",
+                    realIngredient.Id, machineId);
+                continue;
+            }
+            var recipeIngredientExist = recipeIngredients.TryGetValue(realIngredient.Id, out var recipeIngredient);
+            if (!recipeIngredientExist)
+            {
+                Log.Error("ACTUALIZING INGREDIENTS: A ingredient with a id {0} in a recipe with a id {} can't be found in our database.",
+                    realIngredient.Id, recipeId);
+                continue;
+            }
+            
+            virtualIngredient.Amount = realIngredient.AmountAfterExecution;
+            
+            var wasRefillingIngredients = realIngredient.AmountAfterExecution - realIngredient.AmountBeforeExecution > 0;
+            if (wasRefillingIngredients)
+                continue;
+
+            var spendAmount = realIngredient.AmountBeforeExecution - realIngredient.AmountAfterExecution;
+            var expectedAmount = recipeIngredient.Amount;
+            var differance = Convert.ToDouble(Math.Abs(spendAmount - expectedAmount));
+            var missingPercent = differance / expectedAmount * 100d;
+            var tolerancePercent = _businessOptions.CurrentValue.IngredientMissingTolerancePercent;
+
+            //TODO: maybe later I'll do autocorrecting for expected amount in a recipe ingredient.  
+            if (missingPercent > tolerancePercent)
+                Log.Error("ACTUALIZING INGREDIENTS: A ingredient with a id {0} in a coffee machine with a id {1} has acrossed the tolerance percent with value {2}% ",
+                    realIngredient.Id, machineId, missingPercent);
+        }
+
+        await _dc.SaveChangesAsync();
         
         return Result.Success();
     }

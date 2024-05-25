@@ -9,6 +9,14 @@ namespace Cpb.Application.Services;
 
 public class CoffeeRecipesService(DbCoffeePointContext _dc)
 {
+    public async Task<ImmutableList<CoffeeRecipeIngredient>> GetIngredients(Guid recipeId) => await _dc
+        .CoffeeRecipeIngredients
+        .AsNoTracking()
+        .Include(u => u.CoffeeRecipe)
+        .Where(u => u.CoffeeRecipeId == recipeId)
+        .Select(u => new CoffeeRecipeIngredient(u.IngredientId, u.CoffeeRecipe.Name, u.Amount))
+        .ToImmutableListAsync();
+    
     public async Task<Result> LockOrderIngredients(Guid orderId, Guid recipeId)
     {
         var ingredients = await _dc.CoffeeRecipeIngredients

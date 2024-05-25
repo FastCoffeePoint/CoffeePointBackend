@@ -1,9 +1,9 @@
 ﻿using Cpb.Common;
 
 namespace Cpb.Application.Configurations;
-public class DefaultAdminCredentials : IOptions
+public class DefaultAdminOptions : IOptions
 {
-    public static string Name => "DefaultAdminCredentials";
+    public static string Name => "DefaultAdminOptions";
 
     public string Email { get; init; }
     public string Password { get; init; }

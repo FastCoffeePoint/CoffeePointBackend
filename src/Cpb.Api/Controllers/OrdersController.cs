@@ -17,4 +17,8 @@ public class OrdersController(OrdersService _ordersService) : CoffeePointControl
     [HttpGet(DefaultUrl)]
     public async Task<ImmutableList<CustomerCoffeeRecipe>> GetAvailableToOrderRecipes() => 
         await _ordersService.GetAvailableToOrderRecipes(); 
+    
+    [HttpGet(DefaultUrl)]
+    public async Task<JsonResult<Order, string>> GetOrder(Guid orderId) => 
+        JsonResult(await _ordersService.GetOrder(orderId)); 
 }
