@@ -121,4 +121,19 @@ public class OrdersService(DbCoffeePointContext _dc,
 
         return result;
     }
+
+    public async Task<Result> CompleteOrder(OrderHasBeenCompletedEvent form)
+    {
+        var order = await _dc.Orders.FirstOrDefaultAsync(u => u.Id == form.OrderId);
+        if (order == null)
+            return Result.Failure($"The order with id {form.OrderId} is not found");
+
+        if (order.State != OrderStates.IsReadyToBeGotten)
+            return Result.Failure($"The order({form.OrderId}) state has to be '{OrderStates.IsReadyToBeGotten}', but now it's {order.State}");
+
+        order.State = OrderStates.IsBrewing;
+        await _dc.SaveChangesAsync();
+        
+        return Result.Success();
+    }
 }

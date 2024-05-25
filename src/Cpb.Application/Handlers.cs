@@ -22,3 +22,13 @@ public class CoffeeIsReadyToBeGottenEventHandler(OrdersService _ordersService) :
             LogHandlerError(form, result.Error);
     }
 }
+
+public class OrderHasBeenCompletedEventHandler(OrdersService _ordersService) : KafkaEventHandler<OrderHasBeenCompletedEvent>
+{
+    public override async Task Handle(OrderHasBeenCompletedEvent form)
+    {
+        var result = await _ordersService.CompleteOrder(form);
+        if(result.IsFailure)
+            LogHandlerError(form, result.Error);
+    }
+}

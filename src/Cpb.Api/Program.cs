@@ -23,10 +23,12 @@ builder.Services.AddScoped<CoffeeMachinesService>();
 builder.Services.AddScoped<OrdersService>();
 
 // Kafka
+var kafkaOptions = GetConfigurationOnRun<KafkaOptions>();
 builder.Services.AddKafka();
-builder.Services.AddConsumer<CoffeeStartedBrewingEvent, CoffeeStartedBrewingEventHandler>(GetConfigurationOnRun<KafkaOptions>());
-builder.Services.AddConsumer<CoffeeIsReadyToBeGottenEvent, CoffeeIsReadyToBeGottenEventHandler>(GetConfigurationOnRun<KafkaOptions>());
-builder.Services.AddProducer<CoffeeWasOrderedEvent>(GetConfigurationOnRun<KafkaOptions>());
+builder.Services.AddConsumer<CoffeeStartedBrewingEvent, CoffeeStartedBrewingEventHandler>(kafkaOptions);
+builder.Services.AddConsumer<CoffeeIsReadyToBeGottenEvent, CoffeeIsReadyToBeGottenEventHandler>(kafkaOptions);
+builder.Services.AddConsumer<OrderHasBeenCompletedEvent, OrderHasBeenCompletedEventHandler>(kafkaOptions);
+builder.Services.AddProducer<CoffeeWasOrderedEvent>(kafkaOptions);
 
 // Options
 builder.Services.Configure<DefaultAdminCredentials>(builder.Configuration.GetSection(DefaultAdminCredentials.Name));
