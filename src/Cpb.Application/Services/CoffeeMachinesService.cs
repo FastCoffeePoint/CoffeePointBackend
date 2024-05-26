@@ -158,12 +158,30 @@ public class CoffeeMachinesService(DbCoffeePointContext _dc,
         return Result.Success();
     }
 
+    public async Task<Result<CoffeeMachineConfiguration, string>> GetConfiguration(Guid machineId)
+    {
+        var machine = await _dc.CoffeeMachines.ExcludeDeleted().FirstOrDefaultAsync(u => u.Id == machineId);
+        if (machine == null)
+            return "The machine not found";
+
+        var ingredients = await _dc.CoffeeMachineIngredients.ActualReadOnly()
+            .Where(u => u.CoffeeMachineId == machineId)
+            .Select(u => new ConfigurationIngredient(u.IngredientId, "<here is your id of a sensor>"))
+            .ToImmutableListAsync();
+
+        var recipes = await _recipesService.GetConfigurationRecipes();
+
+        var configuration = new CoffeeMachineConfiguration(machine.Id, ingredients, recipes);
+
+        return configuration;
+    } 
+
     public async Task<Result> ApproveMachine(ApproveCoffeeMachineForm form)
     {
         if (Uri.TryCreate(form.MachineHealthCheckEndpointUrl, UriKind.Absolute, out _))
             return Result.Failure("Uri is invalid");
         
-        var machine = await _dc.CoffeeMachines.FirstOrDefaultAsync(u => u.Id == form.MachineId);
+        var machine = await _dc.CoffeeMachines.ExcludeDeleted().FirstOrDefaultAsync(u => u.Id == form.MachineId);
         if (machine == null)
             return Result.Failure("The machine not found");
 
@@ -180,7 +198,7 @@ public class CoffeeMachinesService(DbCoffeePointContext _dc,
 
     public async Task<Result> MakeMachineUnavailable(Guid machineId)
     {
-        var machine = await _dc.CoffeeMachines.FirstOrDefaultAsync(u => u.Id == machineId);
+        var machine = await _dc.CoffeeMachines.ExcludeDeleted().FirstOrDefaultAsync(u => u.Id == machineId);
         if (machine == null)
             return Result.Failure("The machine not found");
 
@@ -193,7 +211,7 @@ public class CoffeeMachinesService(DbCoffeePointContext _dc,
     
     public async Task<Result> MakeMachineActive(Guid machineId)
     {
-        var machine = await _dc.CoffeeMachines.FirstOrDefaultAsync(u => u.Id == machineId);
+        var machine = await _dc.CoffeeMachines.ExcludeDeleted().FirstOrDefaultAsync(u => u.Id == machineId);
         if (machine == null)
             return Result.Failure("The machine not found");
 
@@ -207,6 +225,7 @@ public class CoffeeMachinesService(DbCoffeePointContext _dc,
     public async Task RunCoffeeMachineObservers()
     {
         var machines = await _dc.CoffeeMachines
+            .ActualReadOnly()
             .Select(u => new { u.Id, u.MachineHealthCheckEndpointUrl })
             .ToListAsync();
 

@@ -7,6 +7,7 @@ public static class ServicesExtensions
     public static IServiceCollection AddKafka(this IServiceCollection services)
     {
         services.AddScoped<IKafkaProducer, KafkaProducer>();
+        
 
         return services;
     }

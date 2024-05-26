@@ -39,8 +39,17 @@ public class KafkaConsumerBackgroundJob<TEvent> : BackgroundService where TEvent
         _serviceProvider = serviceProvider;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        //TODO: looks ugly, but BackgroundService locks the app, because we have _consumer.Consume(...) doesn't hava an async version.
+        // Perhaps I should user Hangfire and this call won't fuck my mind at all.
+        Task.Run(() => Process(stoppingToken), stoppingToken); 
+        return Task.CompletedTask;
+    }
+    
+    private async void Process(CancellationToken stoppingToken)
+    {
+        Log.Information("KAFKA CONSUMER: A consumer for {0} is starting.", TEvent.Name);
         _consumer.Subscribe(_topic);
 
         while (!stoppingToken.IsCancellationRequested)
@@ -48,9 +57,11 @@ public class KafkaConsumerBackgroundJob<TEvent> : BackgroundService where TEvent
             ConsumeResult<Null, TEvent> consumeResult = null;
             try
             {
+                Log.Information("KAFKA CONSUMER: A consumer for {0} is consuming.", TEvent.Name);
                 consumeResult = _consumer.Consume(stoppingToken);
                 
                 var appEvent = consumeResult.Message.Value;
+                Log.Information("KAFKA CONSUMER: A consumer for {0} have received a message: {1}.", TEvent.Name, appEvent);
                 if (appEvent == null)
                 {
                     Log.Warning("PERSON KAFKA CONSUMER ERROR: A message equals null, topic - {0}, message type - {1}", 

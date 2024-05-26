@@ -9,6 +9,11 @@ namespace Cpb.Application.Services;
 
 public class CoffeeRecipesService(DbCoffeePointContext _dc)
 {
+    public async Task<ImmutableList<ConfigurationRecipe>> GetConfigurationRecipes() => await _dc.CoffeeRecipes
+        .ActualReadOnly()
+        .Select(u => new ConfigurationRecipe(u.Id, "<here is your id of a sensor>"))
+        .ToImmutableListAsync();
+    
     public async Task<ImmutableList<CoffeeRecipeIngredient>> GetIngredients(Guid recipeId) => await _dc
         .CoffeeRecipeIngredients
         .AsNoTracking()

@@ -16,6 +16,9 @@ public record CoffeeRecipeIngredient(Guid Id, string Name, int Amount);
 // Coffee machine
 public record CoffeeMachine(Guid Id, string Name, ImmutableList<CoffeeMachineIngredient> Ingredients);
 public record CoffeeMachineIngredient(Guid Id, string Name, int Amount);
+public record CoffeeMachineConfiguration(Guid MachineId, ImmutableList<ConfigurationIngredient> Ingredients, ImmutableList<ConfigurationRecipe> Recipes);
+public record ConfigurationIngredient(Guid IngredientId, string SensorId);
+public record ConfigurationRecipe(Guid RecipeId, string SensorId);
 
 
 // Orders

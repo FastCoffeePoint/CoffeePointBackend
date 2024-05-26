@@ -43,6 +43,6 @@ public record CoffeeIsReadyToBeGottenEvent(Guid MachineId, Guid OrderId, Immutab
 }
 public record OrderHasBeenCompletedEvent(Guid OrderId): IEvent
 {
-    public static string Name => "OrderHasBeenCompleted";
+    public static string Name => "OrderHasBeenCompletedEvent";
 }
 
