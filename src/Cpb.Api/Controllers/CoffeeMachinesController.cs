@@ -1,10 +1,12 @@
 ﻿using Cpb.Api.AspNetCore;
 using Cpb.Application;
 using Cpb.Application.Services;
+using Cpb.Domain;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Cpb.Api.Controllers;
 
+[Roles(Roles.Admin)]
 public class CoffeeMachinesController(CoffeeMachinesService _machinesService) : CoffeePointController
 {
     [HttpPut(DefaultUrl)]

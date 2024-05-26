@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Cpb.Api.Controllers;
 
+[Roles(Roles.Admin)]
 public class IngredientsController(IngredientsService _ingredientsService) : CoffeePointController
 {
     [HttpPost(DefaultUrl)]

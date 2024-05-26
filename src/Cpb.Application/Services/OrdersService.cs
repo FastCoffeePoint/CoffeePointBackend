@@ -137,8 +137,13 @@ public class OrdersService(DbCoffeePointContext _dc,
         return Result.Success();
     }
 
-    public async Task<Maybe<Order>> GetOrder(Guid id) => await _dc.Orders
+    public async Task<Maybe<Order>> GetOrder(Guid orderId) => await _dc.Orders
         .ActualReadOnly()
         .Select(u => new Order(u.Id, u.State, u.CoffeeRecipeId, u.UserId))
-        .FirstOrDefaultAsync(u => u.Id == id);
+        .FirstOrDefaultAsync(u => u.Id == orderId);
+    
+    public async Task<Maybe<Order>> GetUserOrder(Guid userId) => await _dc.Orders
+        .ActualReadOnly()
+        .Select(u => new Order(u.Id, u.State, u.CoffeeRecipeId, u.UserId))
+        .FirstOrDefaultAsync(u => u.UserId == userId);
 }
