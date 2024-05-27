@@ -55,26 +55,25 @@ builder.Services.AddDbContext<DbCoffeePointContext>(u =>
     u.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddCustomAuthentication(GetConfigurationOnRun<AuthOptions>());
+builder.Services.AddAuthorization();
+
 builder.Services.AddHttpClient();
+builder.Services.AddCors(options => options.AddDefaultPolicy(u => u.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddControllers();
 builder.Services.AddSwaggerGen(u => 
 {
     u.AddSecurityDefinition("Bearer", GetOpenApiSecurityScheme());
     u.AddSecurityRequirement(GetOpenApiSecurityRequirement());
 });
-builder.Services.AddCors(options => options.AddDefaultPolicy(u => u.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
-
-builder.Services.AddAuthorization();
-
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddControllers();
 
 var app = builder.Build();
 
-app.UseMiddleware<ExceptionHandlingMiddleware>();
+
 
 await InitializeDb(app);
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 app.UseHangfireDashboard();
 app.UseSwagger();
 app.UseSwaggerUI();

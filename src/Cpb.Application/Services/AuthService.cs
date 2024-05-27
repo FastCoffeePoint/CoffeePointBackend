@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using System.Text;
 using Cpb.Application.Configurations;
+using Cpb.Common;
 using Cpb.Database;
 using Cpb.Database.Entities;
 using Cpb.Domain;
@@ -84,7 +85,7 @@ public class AuthService(
         {
             new (JwtRegisteredClaimNames.Email, user.Email),
             new (JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new(ClaimTypes.Role, user.Role.ToString())
+            new(CustomClaimTypes.Role, user.Role.ToString())
         };
 
         var token = new JwtSecurityToken(authOptions.Issuer,

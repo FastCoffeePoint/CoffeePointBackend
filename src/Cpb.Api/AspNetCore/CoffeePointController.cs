@@ -2,6 +2,7 @@
 using Cpb.Domain;
 using CSharpFunctionalExtensions;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Net.Http.Headers;
 
 namespace Cpb.Api.AspNetCore;
 
@@ -17,13 +18,21 @@ public class CoffeePointController : ControllerBase
 
     private Actor ForciblyGetActor()
     {
-        var stringGuid = User.Claims.FirstOrDefault(u => u.Type == JwtRegisteredClaimNames.Sub);
+        // User.Claims has wrong claim types and I don't know why, probably because of the configuration. 
+        var wasHeaderFound = Request.Headers.TryGetValue(HeaderNames.Authorization, out var token);
+        if (!wasHeaderFound) 
+            throw new Exception($"Can't find JWT in request header");
+        token = token.ToString().Replace("Bearer ", "");
+
+        var handler = new JwtSecurityTokenHandler();
+        var jwtToken = handler.ReadJwtToken(token);
+        var stringGuid = jwtToken.Claims.FirstOrDefault(u => u.Type == JwtRegisteredClaimNames.Sub);
         if (stringGuid == null)
             throw new Exception($"Can't find claim with user id");
 
         var wasParsed = Guid.TryParse(stringGuid.Value, out var userId);
         if(!wasParsed)
-            throw new Exception($"Can't find claim with user id");
+            throw new Exception($"Can't find a claim with the user id {stringGuid.Value}");
 
         _actor = new Actor(userId);
 

@@ -9,23 +9,20 @@ public static class StartupExtensions
 {
     public static IServiceCollection AddCustomAuthentication(this IServiceCollection services, AuthOptions authOptions)
     {
-        services.AddAuthentication(options =>
-        {
-            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-        }).AddJwtBearer(jwtOptions =>
-        {
-            jwtOptions.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-                ValidIssuer = authOptions.Issuer,
-                ValidAudience = authOptions.Audience,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authOptions.SecretKey))
-            };
-        });
+        services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+            .AddJwtBearer(jwtOptions => 
+            { 
+                jwtOptions.TokenValidationParameters = new TokenValidationParameters 
+                { 
+                    ValidateIssuer = true, 
+                    ValidateAudience = true, 
+                    ValidateLifetime = true, 
+                    ValidateIssuerSigningKey = true, 
+                    ValidIssuer = authOptions.Issuer, 
+                    ValidAudience = authOptions.Audience, 
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authOptions.SecretKey)) 
+                }; 
+            });
 
         return services;
     }
