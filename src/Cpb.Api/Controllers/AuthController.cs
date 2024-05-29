@@ -19,6 +19,6 @@ public class AuthController(AuthService authService) : CoffeePointController
 
     [Authorize]
     [HttpGet(DefaultUrl)]
-    public JsonResult<bool, string> TestAuthentication() =>
-        Result.Success<bool, string>(true);
+    public JsonResult<Guid, string> TestAuthentication() =>
+        Result.Success<Guid, string>(Actor.UserId);
 }

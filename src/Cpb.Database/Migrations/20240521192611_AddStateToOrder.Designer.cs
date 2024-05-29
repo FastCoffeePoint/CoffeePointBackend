@@ -3,6 +3,7 @@ using System;
 using Cpb.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Cpb.Database.Migrations
 {
     [DbContext(typeof(DbCoffeePointContext))]
-    partial class DbCoffeePointContextModelSnapshot : ModelSnapshot
+    [Migration("20240521192611_AddStateToOrder")]
+    partial class AddStateToOrder
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -137,41 +140,6 @@ namespace Cpb.Database.Migrations
                     b.ToTable("Ingredients");
                 });
 
-            modelBuilder.Entity("Cpb.Database.Entities.DbLockedIngredient", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset>("CreateDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTimeOffset?>("DeleteDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("IngredientId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("LockedAmount")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("OrderId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("RecipeId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("IngredientId");
-
-                    b.HasIndex("OrderId");
-
-                    b.HasIndex("RecipeId");
-
-                    b.ToTable("LockedIngredients");
-                });
-
             modelBuilder.Entity("Cpb.Database.Entities.DbOrder", b =>
                 {
                     b.Property<Guid>("Id")
@@ -235,7 +203,7 @@ namespace Cpb.Database.Migrations
             modelBuilder.Entity("Cpb.Database.Entities.DbCoffeeMachineIngredient", b =>
                 {
                     b.HasOne("Cpb.Database.Entities.DbCoffeeMachine", "CoffeeMachine")
-                        .WithMany("Links")
+                        .WithMany()
                         .HasForeignKey("CoffeeMachineId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -270,33 +238,6 @@ namespace Cpb.Database.Migrations
                     b.Navigation("Ingredient");
                 });
 
-            modelBuilder.Entity("Cpb.Database.Entities.DbLockedIngredient", b =>
-                {
-                    b.HasOne("Cpb.Database.Entities.DbIngredient", "Ingredient")
-                        .WithMany()
-                        .HasForeignKey("IngredientId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Cpb.Database.Entities.DbOrder", "Order")
-                        .WithMany("LockedIngredients")
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("Cpb.Database.Entities.DbCoffeeRecipe", "Recipe")
-                        .WithMany()
-                        .HasForeignKey("RecipeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Ingredient");
-
-                    b.Navigation("Order");
-
-                    b.Navigation("Recipe");
-                });
-
             modelBuilder.Entity("Cpb.Database.Entities.DbOrder", b =>
                 {
                     b.HasOne("Cpb.Database.Entities.DbCoffeeRecipe", "CoffeeRecipe")
@@ -316,11 +257,6 @@ namespace Cpb.Database.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("Cpb.Database.Entities.DbCoffeeMachine", b =>
-                {
-                    b.Navigation("Links");
-                });
-
             modelBuilder.Entity("Cpb.Database.Entities.DbCoffeeRecipe", b =>
                 {
                     b.Navigation("Links");
@@ -329,11 +265,6 @@ namespace Cpb.Database.Migrations
             modelBuilder.Entity("Cpb.Database.Entities.DbIngredient", b =>
                 {
                     b.Navigation("Links");
-                });
-
-            modelBuilder.Entity("Cpb.Database.Entities.DbOrder", b =>
-                {
-                    b.Navigation("LockedIngredients");
                 });
 #pragma warning restore 612, 618
         }

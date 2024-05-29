@@ -11,4 +11,8 @@ public class DbCoffeeRecipe : DbEntity
     public string Name { get; set; }
 
     public List<DbIngredient> Ingredients { get; set; }
+    
+    public List<DbCoffeeRecipeIngredient> Links { get; set; }
+
+    public int CurrentOrdersCount { get; set; }
 }

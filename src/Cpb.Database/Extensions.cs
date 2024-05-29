@@ -5,6 +5,9 @@ namespace Cpb.Database;
 
 public static class Extensions
 {
+    public static IQueryable<T> ActualReadOnly<T>(this IQueryable<T> query) where T : DbEntity =>
+        query.ExcludeDeleted().AsNoTracking();
+    
     public static IQueryable<T> ExcludeDeleted<T>(this IQueryable<T> query) where T : DbEntity =>
         query.Where(u => u.DeleteDate == null);
 

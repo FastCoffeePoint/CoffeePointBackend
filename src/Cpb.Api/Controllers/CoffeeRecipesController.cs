@@ -7,25 +7,26 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Cpb.Api.Controllers;
 
-public class CoffeeRecipesController(CoffeeRecipesService coffeeRecipesService) : CoffeePointController
+[Roles(Roles.Admin)]
+public class CoffeeRecipesController(CoffeeRecipesService _coffeeRecipesService) : CoffeePointController
 {
     [HttpPost(DefaultUrl)]
     public async Task<JsonResult<Guid, string>> CreateCoffeeRecipe(CreateCoffeeRecipe form) => 
-        await coffeeRecipesService.CreateCoffeeRecipe(form);
+        await _coffeeRecipesService.CreateCoffeeRecipe(form);
     
-    [HttpPost(DefaultUrl)]
-    public async Task<JsonResult<Guid, string>> DeleteCoffeeRecipe(Guid recipeId) => 
-        await coffeeRecipesService.DeleteCoffeeRecipe(recipeId);
+    [HttpDelete(DefaultUrl)]
+    public async Task<JsonOptionError> DeleteCoffeeRecipe(Guid recipeId) => 
+        await _coffeeRecipesService.DeleteCoffeeRecipe(recipeId);
     
-    [HttpPost(DefaultUrl)]
-    public async Task<JsonResult<Guid, string>> AddIngredientToRecipe(ManageIngredientInRecipeForm form) => 
-        await coffeeRecipesService.AddIngredientToRecipe(form);
+    [HttpPut(DefaultUrl)]
+    public async Task<JsonOptionError> SetIngredientInRecipe(SetIngredientInRecipeForm setIngredientInRecipeForm) => 
+        await _coffeeRecipesService.SetIngredientInRecipe(setIngredientInRecipeForm);
     
-    [HttpPost(DefaultUrl)]
-    public async Task<JsonResult<Guid, string>> RemoveIngredientFromRecipe(ManageIngredientInRecipeForm form) => 
-        await coffeeRecipesService.RemoveIngredientFromRecipe(form); 
+    [HttpDelete(DefaultUrl)]
+    public async Task<JsonOptionError> RemoveIngredientFromRecipe(RemoveIngredientFromRecipeForm form) => 
+        await _coffeeRecipesService.RemoveIngredientFromRecipe(form); 
     
     [HttpGet(DefaultUrl)]
     public async Task<ImmutableList<CoffeeRecipe>> GetCoffeeRecipes() => 
-        await coffeeRecipesService.GetCoffeeRecipes(); 
+        await _coffeeRecipesService.GetCoffeeRecipes(); 
 }

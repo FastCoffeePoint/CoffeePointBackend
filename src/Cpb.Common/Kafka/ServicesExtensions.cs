@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace Cpb.Common.Kafka;
 
@@ -8,13 +7,14 @@ public static class ServicesExtensions
     public static IServiceCollection AddKafka(this IServiceCollection services)
     {
         services.AddScoped<IKafkaProducer, KafkaProducer>();
+        
 
         return services;
     }
 
-    public static IServiceCollection AddProducer<TEvent>(this IServiceCollection services, IOptionsMonitor<KafkaOptions> configuration) where TEvent : class, IEvent
+    public static IServiceCollection AddProducer<TEvent>(this IServiceCollection services, KafkaOptions configuration) where TEvent : class, IEvent
     {
-        var configurationFound = configuration.CurrentValue.Producers
+        var configurationFound = configuration.Producers
             .Any(u => u.Topics
                 .Any(v => v.Events
                     .Any(j => j == TEvent.Name)));
@@ -26,18 +26,18 @@ public static class ServicesExtensions
         return services;
     }
     
-    public static IServiceCollection AddConsumer<TEvent, THandler>(this IServiceCollection services, IOptionsMonitor<KafkaOptions> configuration) 
+    public static IServiceCollection AddConsumer<TEvent, THandler>(this IServiceCollection services, KafkaOptions configuration) 
         where TEvent : class, IEvent
-        where THandler : class, IEventHandler<TEvent>
+        where THandler : KafkaEventHandler<TEvent>
     {
-        var configurationFound = configuration.CurrentValue.Consumers
+        var configurationFound = configuration.Consumers
             .Any(u => u.Topics
                 .Any(v => v.Events
                     .Any(j => j == TEvent.Name)));
         if (!configurationFound)
             throw new Exception($"Any consumer configuration wasn't registered with name: {TEvent.Name}");
         
-        services.AddScoped<IEventHandler<TEvent>, THandler>();
+        services.AddScoped<KafkaEventHandler<TEvent>, THandler>();
         services.AddHostedService<KafkaConsumerBackgroundJob<TEvent>>();
         return services;
     }

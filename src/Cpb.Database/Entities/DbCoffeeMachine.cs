@@ -12,10 +12,12 @@ public class DbCoffeeMachine : DbEntity
     
     [MaxLength(NameMaxLength)]
     public string Name { get; set; }
-    public CoffeeMachineState State { get; set; }
+    public CoffeeMachineStates State { get; set; }
     
     [MaxLength(UrlLength)]
     public string MachineHealthCheckEndpointUrl { get; set; }
 
     public List<DbIngredient> Ingredients { get; set; }
+    
+    public List<DbCoffeeMachineIngredient> Links { get; set; }
 }

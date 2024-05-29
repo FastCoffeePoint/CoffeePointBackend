@@ -3,6 +3,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Serilog;
 
 namespace Cpb.Common.Kafka;
 
@@ -10,12 +11,10 @@ public class KafkaConsumerBackgroundJob<TEvent> : BackgroundService where TEvent
 {
     private readonly IConsumer<Null, TEvent> _consumer;
     private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger _logger;
     private readonly string _topic;
 
     public KafkaConsumerBackgroundJob(IOptionsMonitor<KafkaOptions> configuration,
-        IServiceProvider serviceProvider, 
-        ILogger logger)
+        IServiceProvider serviceProvider)
     {
         var consumerConfiguration = configuration.CurrentValue.Consumers
             .FirstOrDefault(u => u.Topics
@@ -38,11 +37,19 @@ public class KafkaConsumerBackgroundJob<TEvent> : BackgroundService where TEvent
                     .Build();
         
         _serviceProvider = serviceProvider;
-        _logger = logger;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        //TODO: looks ugly, but BackgroundService locks the app, because we have _consumer.Consume(...) doesn't hava an async version.
+        // Perhaps I should user Hangfire and this call won't fuck my mind at all.
+        Task.Run(() => Process(stoppingToken), stoppingToken); 
+        return Task.CompletedTask;
+    }
+    
+    private async void Process(CancellationToken stoppingToken)
+    {
+        Log.Information("KAFKA CONSUMER: A consumer for {0} is starting.", TEvent.Name);
         _consumer.Subscribe(_topic);
 
         while (!stoppingToken.IsCancellationRequested)
@@ -50,17 +57,19 @@ public class KafkaConsumerBackgroundJob<TEvent> : BackgroundService where TEvent
             ConsumeResult<Null, TEvent> consumeResult = null;
             try
             {
+                Log.Information("KAFKA CONSUMER: A consumer for {0} is consuming.", TEvent.Name);
                 consumeResult = _consumer.Consume(stoppingToken);
                 
                 var appEvent = consumeResult.Message.Value;
+                Log.Information("KAFKA CONSUMER: A consumer for {0} have received a message: {1}.", TEvent.Name, appEvent);
                 if (appEvent == null)
                 {
-                    _logger.LogWarning("PERSON KAFKA CONSUMER ERROR: A message equals null, topic - {0}, message type - {1}", 
+                    Log.Warning("PERSON KAFKA CONSUMER ERROR: A message equals null, topic - {0}, message type - {1}", 
                         _topic, typeof(TEvent).ToString());
                     continue;
                 }
                 
-                var handler = _serviceProvider.GetService<IEventHandler<TEvent>>();
+                var handler = _serviceProvider.GetService<KafkaEventHandler<TEvent>>();
                 if (handler == null)
                     throw new Exception($"Event handler for {typeof(TEvent)} wasn't registered");
 
@@ -68,7 +77,7 @@ public class KafkaConsumerBackgroundJob<TEvent> : BackgroundService where TEvent
             }
             catch (Exception e)
             {
-                _logger.LogError(e, "PERSON KAFKA CONSUMER ERROR: message can't be handled because of an exception, topic - {0}, message type - {1}, message - {2}", 
+                Log.Error(e, "PERSON KAFKA CONSUMER ERROR: message can't be handled because of an exception, topic - {0}, message type - {1}, message - {2}", 
                     _topic, typeof(TEvent).ToString(), consumeResult?.Message);
             }
         }

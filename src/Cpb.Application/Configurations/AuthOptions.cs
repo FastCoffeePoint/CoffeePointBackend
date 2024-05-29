@@ -1,8 +1,10 @@
-﻿namespace Cpb.Application.Configurations;
+﻿using Cpb.Common;
 
-public class AuthOptions
+namespace Cpb.Application.Configurations;
+
+public class AuthOptions : IOptions
 {
-    public static string Name = "AuthOptions";
+    public static string Name => "AuthOptions";
     
     public string SecretKey { get; init; }
     public string Issuer { get; init; }

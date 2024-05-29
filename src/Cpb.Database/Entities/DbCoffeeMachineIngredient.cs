@@ -8,5 +8,8 @@ public class DbCoffeeMachineIngredient : DbEntity
     public DbIngredient Ingredient { get; set; }
     public Guid IngredientId { get; set; }
 
+    /// <summary>
+    /// How many ingredients a machine has theoretically.
+    /// </summary>
     public int Amount { get; set; }
 }
