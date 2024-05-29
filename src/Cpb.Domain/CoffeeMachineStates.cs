@@ -1,5 +1,8 @@
-﻿namespace Cpb.Domain;
+﻿using System.Text.Json.Serialization;
 
+namespace Cpb.Domain;
+
+[JsonConverter(typeof(JsonStringEnumConverter))]
 public enum CoffeeMachineStates
 {
     Unavailable = 0,

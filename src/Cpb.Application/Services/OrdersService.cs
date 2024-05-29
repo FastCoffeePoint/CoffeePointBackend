@@ -84,16 +84,16 @@ public class OrdersService(DbCoffeePointContext _dc,
         return order.Id;
     }
 
-    public async Task<Result> StartBrewingCoffee(CoffeeStartedBrewingEvent form)
+    public async Task<Result> StartBrewingCoffee(Guid orderId)
     {
-        var order = await _dc.Orders.FirstOrDefaultAsync(u => u.Id == form.OrderId);
+        var order = await _dc.Orders.FirstOrDefaultAsync(u => u.Id == orderId);
         if (order == null)
-            return Result.Failure($"The order with id {form.OrderId} is not found");
+            return Result.Failure($"The order with id {orderId} is not found");
 
-        if (order.State != OrderStates.InOrder)
-            return Result.Failure($"The order({form.OrderId}) state has to be '{OrderStates.InOrder}', but now it's {order.State}");
+        if (order.State != OrderStates.InQueue)
+            return Result.Failure($"The order({orderId}) state has to be '{OrderStates.InQueue}', but now it's {order.State}");
 
-        order.State = OrderStates.IsBrewing;
+        order.State = OrderStates.Brewing;
         await _dc.SaveChangesAsync();
         
         //TODO: Here should be a notification to a customer like: Go to a coffee machine, because your coffee will be made in 3 minutes!
@@ -107,10 +107,10 @@ public class OrdersService(DbCoffeePointContext _dc,
         if (order == null)
             return Result.Failure($"The order with id {form.OrderId} is not found");
 
-        if (order.State != OrderStates.IsBrewing)
-            return Result.Failure($"The order({form.OrderId}) state has to be '{OrderStates.IsBrewing}', but now it's {order.State}");
+        if (order.State != OrderStates.Brewing)
+            return Result.Failure($"The order({form.OrderId}) state has to be '{OrderStates.Brewing}', but now it's {order.State}");
         
-        order.State = OrderStates.IsReadyToBeGotten;
+        order.State = OrderStates.ReadyToBeGotten;
         await _dc.SaveChangesAsync();
         
         var actualizingIngredients = await _machinesService.ActualizeIngredientsAmount(form.MachineId, order.CoffeeRecipeId, form.Ingredients);
@@ -122,28 +122,47 @@ public class OrdersService(DbCoffeePointContext _dc,
         return result;
     }
 
-    public async Task<Result> CompleteOrder(OrderHasBeenCompletedEvent form)
+    public async Task<Result> CompleteOrder(Guid orderId)
     {
-        var order = await _dc.Orders.FirstOrDefaultAsync(u => u.Id == form.OrderId);
+        var order = await _dc.Orders.FirstOrDefaultAsync(u => u.Id == orderId);
         if (order == null)
-            return Result.Failure($"The order with id {form.OrderId} is not found");
+            return Result.Failure($"The order with id {orderId} is not found");
 
-        if (order.State != OrderStates.IsReadyToBeGotten)
-            return Result.Failure($"The order({form.OrderId}) state has to be '{OrderStates.IsReadyToBeGotten}', but now it's {order.State}");
+        if (order.State != OrderStates.ReadyToBeGotten)
+            return Result.Failure($"The order({orderId}) state has to be '{OrderStates.ReadyToBeGotten}', but now it's {order.State}");
 
-        order.State = OrderStates.IsBrewing;
+        order.State = OrderStates.Complete;
+        await _dc.SaveChangesAsync();
+        
+        return Result.Success();
+    }
+    
+    public async Task<Result> FailOrder(Guid orderId)
+    {
+        var order = await _dc.Orders.FirstOrDefaultAsync(u => u.Id == orderId);
+        if (order == null)
+            return Result.Failure($"The order with id {orderId} is not found");
+
+        order.State = OrderStates.Failed;
         await _dc.SaveChangesAsync();
         
         return Result.Success();
     }
 
-    public async Task<Maybe<Order>> GetOrder(Guid orderId) => await _dc.Orders
-        .ActualReadOnly()
-        .Select(u => new Order(u.Id, u.State, u.CoffeeRecipeId, u.UserId))
-        .FirstOrDefaultAsync(u => u.Id == orderId);
-    
-    public async Task<Maybe<Order>> GetUserOrder(Guid userId) => await _dc.Orders
-        .ActualReadOnly()
-        .Select(u => new Order(u.Id, u.State, u.CoffeeRecipeId, u.UserId))
-        .FirstOrDefaultAsync(u => u.UserId == userId);
+    public async Task<Maybe<Order>> GetOrder(Guid orderId)
+    {
+        var order = await _dc.Orders.ActualReadOnly().FirstOrDefaultAsync(u => u.Id == orderId);
+        return Map(order);
+    }
+
+    public async Task<Maybe<Order>> GetUserOrder(Guid userId)
+    {
+        var order = await _dc.Orders.ActualReadOnly().FirstOrDefaultAsync(u => u.UserId == userId);
+        return Map(order);
+    }
+
+    private Maybe<Order> Map(DbOrder order) =>
+        order == null 
+            ? Maybe<Order>.None
+            : new Order(order.Id, order.State, order.CoffeeRecipeId, order.UserId);
 }

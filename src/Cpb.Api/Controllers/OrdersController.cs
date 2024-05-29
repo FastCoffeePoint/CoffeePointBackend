@@ -28,5 +28,5 @@ public class OrdersController(OrdersService _ordersService) : CoffeePointControl
     [Roles(Roles.Customer)]
     [HttpGet(DefaultUrl)]
     public async Task<JsonResult<Order, string>> GetUserOrder() => 
-        JsonResult(await _ordersService.GetOrder(Actor.UserId)); 
+        JsonResult(await _ordersService.GetUserOrder(Actor.UserId)); 
 }

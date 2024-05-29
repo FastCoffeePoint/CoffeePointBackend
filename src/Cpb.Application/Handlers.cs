@@ -7,9 +7,14 @@ public class CoffeeStartedBrewingEventHandler(OrdersService _ordersService) : Ka
 {
     public override async Task Handle(CoffeeStartedBrewingEvent form)
     {
-        var result = await _ordersService.StartBrewingCoffee(form);
-        if(result.IsFailure)
-            LogHandlerError(form, result.Error);
+        var result = await _ordersService.StartBrewingCoffee(form.OrderId);
+        if(result.IsSuccess)
+            return;
+        
+        LogHandlerError(form, result.Error);
+        var falling = await _ordersService.FailOrder(form.OrderId);
+        if(falling.IsFailure)
+            LogHandlerError(form, falling.Error);
     }
 }
 
@@ -18,8 +23,13 @@ public class CoffeeIsReadyToBeGottenEventHandler(OrdersService _ordersService) :
     public override async Task Handle(CoffeeIsReadyToBeGottenEvent form)
     {
         var result = await _ordersService.MarkOrderAsReadyToBeGotten(form);
-        if(result.IsFailure)
-            LogHandlerError(form, result.Error);
+        if(result.IsSuccess)
+            return;
+        
+        LogHandlerError(form, result.Error);
+        var falling = await _ordersService.FailOrder(form.OrderId);
+        if(falling.IsFailure)
+            LogHandlerError(form, falling.Error);
     }
 }
 
@@ -27,8 +37,13 @@ public class OrderHasBeenCompletedEventHandler(OrdersService _ordersService) : K
 {
     public override async Task Handle(OrderHasBeenCompletedEvent form)
     {
-        var result = await _ordersService.CompleteOrder(form);
-        if(result.IsFailure)
-            LogHandlerError(form, result.Error);
+        var result = await _ordersService.CompleteOrder(form.OrderId);
+        if(result.IsSuccess)
+            return;
+        
+        LogHandlerError(form, result.Error);
+        var falling = await _ordersService.FailOrder(form.OrderId);
+        if(falling.IsFailure)
+            LogHandlerError(form, falling.Error);
     }
 }

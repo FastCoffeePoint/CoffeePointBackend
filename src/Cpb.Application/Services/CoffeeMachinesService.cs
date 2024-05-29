@@ -166,7 +166,7 @@ public class CoffeeMachinesService(DbCoffeePointContext _dc,
 
         var ingredients = await _dc.CoffeeMachineIngredients.ActualReadOnly()
             .Where(u => u.CoffeeMachineId == machineId)
-            .Select(u => new ConfigurationIngredient(u.IngredientId, "<here is your id of a sensor>"))
+            .Select(u => new ConfigurationIngredient(u.IngredientId, "here is your id of a sensor"))
             .ToImmutableListAsync();
 
         var recipes = await _recipesService.GetConfigurationRecipes();
