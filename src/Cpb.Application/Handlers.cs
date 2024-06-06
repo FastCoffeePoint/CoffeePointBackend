@@ -7,7 +7,7 @@ public class CoffeeStartedBrewingEventHandler(OrdersService _ordersService) : Ka
 {
     public override async Task Handle(CoffeeStartedBrewingEvent form)
     {
-        var result = await _ordersService.StartBrewingCoffee(form.OrderId);
+        var result = await _ordersService.StartBrewingCoffee(form);
         if(result.IsSuccess)
             return;
         
@@ -42,6 +42,16 @@ public class OrderHasBeenCompletedEventHandler(OrdersService _ordersService) : K
             return;
         
         LogHandlerError(form, result.Error);
+        var falling = await _ordersService.FailOrder(form.OrderId);
+        if(falling.IsFailure)
+            LogHandlerError(form, falling.Error);
+    }
+}
+
+public class OrderHasBeenFailedEventHandler(OrdersService _ordersService) : KafkaEventHandler<OrderHasBeenFailedEvent>
+{
+    public override async Task Handle(OrderHasBeenFailedEvent form)
+    {
         var falling = await _ordersService.FailOrder(form.OrderId);
         if(falling.IsFailure)
             LogHandlerError(form, falling.Error);

@@ -84,16 +84,18 @@ public class OrdersService(DbCoffeePointContext _dc,
         return order.Id;
     }
 
-    public async Task<Result> StartBrewingCoffee(Guid orderId)
+    public async Task<Result> StartBrewingCoffee(CoffeeStartedBrewingEvent form)
     {
-        var order = await _dc.Orders.FirstOrDefaultAsync(u => u.Id == orderId);
+        var order = await _dc.Orders.FirstOrDefaultAsync(u => u.Id == form.OrderId);
         if (order == null)
-            return Result.Failure($"The order with id {orderId} is not found");
+            return Result.Failure($"The order with id {form.OrderId} is not found");
 
         if (order.State != OrderStates.InQueue)
-            return Result.Failure($"The order({orderId}) state has to be '{OrderStates.InQueue}', but now it's {order.State}");
+            return Result.Failure($"The order({form.OrderId}) state has to be '{OrderStates.InQueue}', but now it's {order.State}");
 
         order.State = OrderStates.Brewing;
+        order.MachineId = form.MachineId;
+        
         await _dc.SaveChangesAsync();
         
         //TODO: Here should be a notification to a customer like: Go to a coffee machine, because your coffee will be made in 3 minutes!

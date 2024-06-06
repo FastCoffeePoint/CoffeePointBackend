@@ -29,7 +29,7 @@ public record RemoveIngredientFromMachineForm(Guid MachineId, Guid IngredientId)
 // Orders
 public record OrderCoffeeForm(Guid RecipeId);
 public record CoffeeMachineIngredientForm(Guid Id, int AmountBeforeExecution, int AmountAfterExecution);
-public record CoffeeStartedBrewingEvent(Guid OrderId): IEvent
+public record CoffeeStartedBrewingEvent(Guid OrderId, Guid MachineId): IEvent
 {
     public static string Name => "CoffeeStartedBrewingEvent";
 }
@@ -45,4 +45,9 @@ public record OrderHasBeenCompletedEvent(Guid OrderId): IEvent
 {
     public static string Name => "OrderHasBeenCompletedEvent";
 }
+public record OrderHasBeenFailedEvent(Guid OrderId, Guid ErrorCode): IEvent
+{
+    public static string Name => "OrderHasBeenFailedEvent";
+}
+
 

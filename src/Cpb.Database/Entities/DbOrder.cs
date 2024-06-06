@@ -8,6 +8,9 @@ public class DbOrder: DbEntity
 
     public OrderStates State { get; set; }
     
+    public Guid? MachineId { get; set; }
+    public DbCoffeeMachine Machine { get; set; }
+    
     public Guid CoffeeRecipeId { get; set; }
     public DbCoffeeRecipe CoffeeRecipe { get; set; }
 

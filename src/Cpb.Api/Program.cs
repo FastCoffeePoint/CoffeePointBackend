@@ -28,6 +28,7 @@ builder.Services.AddKafka();
 builder.Services.AddConsumer<CoffeeStartedBrewingEvent, CoffeeStartedBrewingEventHandler>(kafkaOptions);
 builder.Services.AddConsumer<CoffeeIsReadyToBeGottenEvent, CoffeeIsReadyToBeGottenEventHandler>(kafkaOptions);
 builder.Services.AddConsumer<OrderHasBeenCompletedEvent, OrderHasBeenCompletedEventHandler>(kafkaOptions);
+builder.Services.AddConsumer<OrderHasBeenFailedEvent, OrderHasBeenFailedEventHandler>(kafkaOptions);
 builder.Services.AddProducer<CoffeeWasOrderedEvent>(kafkaOptions);
 
 // Options

@@ -1,4 +1,5 @@
 ﻿using System.Collections.Immutable;
+using Cpb.Common;
 
 namespace Cpb.Domain;
 

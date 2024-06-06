@@ -17,7 +17,8 @@ public class DbCoffeeMachine : DbEntity
     [MaxLength(UrlLength)]
     public string MachineHealthCheckEndpointUrl { get; set; }
 
-    public List<DbIngredient> Ingredients { get; set; }
+    public List<DbOrder> Orders { get; set; }
     
+    public List<DbIngredient> Ingredients { get; set; }
     public List<DbCoffeeMachineIngredient> Links { get; set; }
 }
