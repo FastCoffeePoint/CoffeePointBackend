@@ -39,7 +39,7 @@ public class CoffeeMachinesService(DbCoffeePointContext _dc,
     private CoffeeMachineIngredient Map(DbIngredient model, DbCoffeeMachineIngredient link) =>
         new(model.Id, model.Name, link.Amount);
     
-    public async Task<Result> ActualizeIngredientsAmount(Guid machineId, Guid recipeId, ImmutableList<CoffeeMachineIngredientForm> realIngredients)
+    public async Task<Result> ActualizeIngredientsAmount(Guid machineId, Guid recipeId, ImmutableList<ExecutedCoffeeIngredientForm> realIngredients)
     {
         var ingredientIds = realIngredients.Select(u => u.Id).ToList();
         var virtualIngredients = await _dc.CoffeeMachineIngredients

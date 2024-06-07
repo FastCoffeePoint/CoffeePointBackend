@@ -79,7 +79,10 @@ public class OrdersService(DbCoffeePointContext _dc,
         if(increasing.IsFailure)
             Log.Warning("A order with id {0} was created, but increasing ordered recipe count failed.", order.Id);
 
-        await _kafkaProducer.Push(new CoffeeWasOrderedEvent(order.Id, order.CoffeeRecipeId));
+        var recipeIngredients = (await _recipesService.GetIngredients(form.RecipeId))
+            .Select(u => new OrderedCoffeeIngredientForm(u.Id, u.Amount))
+            .ToImmutableList();
+        await _kafkaProducer.Push(new CoffeeWasOrderedEvent(order.Id, order.CoffeeRecipeId, recipeIngredients));
 
         return order.Id;
     }
