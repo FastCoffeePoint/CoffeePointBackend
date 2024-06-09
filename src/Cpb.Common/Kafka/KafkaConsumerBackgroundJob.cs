@@ -49,7 +49,7 @@ public class KafkaConsumerBackgroundJob<TEvent> : BackgroundService where TEvent
     
     private async void Process(CancellationToken stoppingToken)
     {
-        Log.Information("KAFKA CONSUMER: A consumer for {0} is starting.", TEvent.Name);
+        Log.Information("KAFKA CONSUMER{0}: A consumer for the event {1} is starting.", _consumer.MemberId, TEvent.Name);
         _consumer.Subscribe(_topic);
 
         while (!stoppingToken.IsCancellationRequested)
@@ -57,19 +57,20 @@ public class KafkaConsumerBackgroundJob<TEvent> : BackgroundService where TEvent
             ConsumeResult<Null, TEvent> consumeResult = null;
             try
             {
-                Log.Information("KAFKA CONSUMER: A consumer for {0} is consuming.", TEvent.Name);
+                Log.Information("KAFKA CONSUMER{0}: A consumer for the event {1} is consuming.",_consumer.MemberId, TEvent.Name);
                 consumeResult = _consumer.Consume(stoppingToken);
                 
                 var appEvent = consumeResult.Message.Value;
-                Log.Information("KAFKA CONSUMER: A consumer for {0} have received a message: {1}.", TEvent.Name, appEvent);
+                Log.Information("KAFKA CONSUMER{0}: A consumer for the event {1} have received a message: {2}.",_consumer.MemberId, TEvent.Name, appEvent);
                 if (appEvent == null)
                 {
-                    Log.Warning("PERSON KAFKA CONSUMER ERROR: A message equals null, topic - {0}, message type - {1}", 
-                        _topic, typeof(TEvent).ToString());
+                    Log.Warning("KAFKA CONSUMER{0}: A message equals null, topic - {1}, message type - {2}", 
+                        _consumer.MemberId,_topic, typeof(TEvent).ToString());
                     continue;
                 }
                 
-                var handler = _serviceProvider.GetService<KafkaEventHandler<TEvent>>();
+                await using var scope = _serviceProvider.CreateAsyncScope();
+                var handler = scope.ServiceProvider.GetService<KafkaEventHandler<TEvent>>();
                 if (handler == null)
                     throw new Exception($"Event handler for {typeof(TEvent)} wasn't registered");
 
@@ -77,11 +78,12 @@ public class KafkaConsumerBackgroundJob<TEvent> : BackgroundService where TEvent
             }
             catch (Exception e)
             {
-                Log.Error(e, "PERSON KAFKA CONSUMER ERROR: message can't be handled because of an exception, topic - {0}, message type - {1}, message - {2}", 
-                    _topic, typeof(TEvent).ToString(), consumeResult?.Message);
+                Log.Error(e, "KAFKA CONSUMER{0}: message can't be handled because of an exception, topic - {1}, message type - {2}, message - {3}", 
+                    _consumer.MemberId, _topic, typeof(TEvent).ToString(), consumeResult?.Message);
             }
         }
 
+        Log.Information("KAFKA CONSUMER{0}: A consumer for the event {1} is closing.", _consumer.MemberId, TEvent.Name);
         _consumer.Close();
     }
 }
