@@ -25,10 +25,13 @@ builder.Services.AddScoped<OrdersService>();
 // Kafka
 var kafkaOptions = GetConfigurationOnRun<KafkaOptions>();
 builder.Services.AddKafka();
-builder.Services.AddConsumer<CoffeeStartedBrewingEvent, CoffeeStartedBrewingEventHandler>(kafkaOptions);
-builder.Services.AddConsumer<CoffeeIsReadyToBeGottenEvent, CoffeeIsReadyToBeGottenEventHandler>(kafkaOptions);
-builder.Services.AddConsumer<OrderHasBeenCompletedEvent, OrderHasBeenCompletedEventHandler>(kafkaOptions);
-builder.Services.AddConsumer<OrderHasBeenFailedEvent, OrderHasBeenFailedEventHandler>(kafkaOptions);
+builder.Services
+    .AddConsumer(kafkaOptions.OrderEventsConsumer)
+    .AddEvent<CoffeeStartedBrewingEvent, CoffeeStartedBrewingEventHandler>()
+    .AddEvent<CoffeeIsReadyToBeGottenEvent, CoffeeIsReadyToBeGottenEventHandler>()
+    .AddEvent<OrderHasBeenCompletedEvent, OrderHasBeenCompletedEventHandler>()
+    .AddEvent<OrderHasBeenFailedEvent, OrderHasBeenFailedEventHandler>();
+
 builder.Services.AddProducer<CoffeeWasOrderedEvent>(kafkaOptions);
 
 // Options

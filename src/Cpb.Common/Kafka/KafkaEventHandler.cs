@@ -1,10 +1,18 @@
-﻿using Serilog;
+﻿using System.Text.Json;
+using Serilog;
 
 namespace Cpb.Common.Kafka;
 
-public abstract class KafkaEventHandler<T> where T : IEvent
+public interface IKafkaEventHandler
+{ 
+    Task HandleRaw(string form);
+}
+
+public abstract class KafkaEventHandler<T> : IKafkaEventHandler where T : IEvent
 {
-    public abstract Task Handle(T form);
+    public Task HandleRaw(string form) => Handle(JsonSerializer.Deserialize<T>(form));
+
+    protected abstract Task Handle(T from);
 
     protected void LogHandlerError(T form, string error) =>
         Log.Error("KAFKA HANDLER {0} ERROR: {1}, DATA: {2}", GetType(), error, form);

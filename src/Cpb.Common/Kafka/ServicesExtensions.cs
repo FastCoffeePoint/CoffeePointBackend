@@ -26,19 +26,17 @@ public static class ServicesExtensions
         return services;
     }
     
-    public static IServiceCollection AddConsumer<TEvent, THandler>(this IServiceCollection services, KafkaOptions configuration) 
+    public static IServiceCollection AddConsumer(this IServiceCollection services, ConsumerConfiguration configuration) 
+    {
+        services.AddHostedService<KafkaConsumerBackgroundJob>(u => new KafkaConsumerBackgroundJob(u, configuration));
+        return services;
+    }
+    
+    public static IServiceCollection AddEvent<TEvent, THandler>(this IServiceCollection services)        
         where TEvent : class, IEvent
         where THandler : KafkaEventHandler<TEvent>
     {
-        var configurationFound = configuration.Consumers
-            .Any(u => u.Topics
-                .Any(v => v.Events
-                    .Any(j => j == TEvent.Name)));
-        if (!configurationFound)
-            throw new Exception($"Any consumer configuration wasn't registered with name: {TEvent.Name}");
-        
-        services.AddScoped<KafkaEventHandler<TEvent>, THandler>();
-        services.AddHostedService<KafkaConsumerBackgroundJob<TEvent>>();
+        services.AddKeyedScoped<KafkaEventHandler<TEvent>, THandler>(TEvent.Name);
         return services;
     }
 }
