@@ -1,4 +1,6 @@
-﻿using Confluent.Kafka;
+﻿using System.Text;
+using Confluent.Kafka;
+using CSharpFunctionalExtensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,7 +27,9 @@ public class KafkaConsumerBackgroundJob : BackgroundService
         };
 
         _serviceProvider = serviceProvider;
-        _consumer = new ConsumerBuilder<Ignore, string>(consumerConfig).Build();
+        _consumer = new ConsumerBuilder<Ignore, string>(consumerConfig)
+            .SetKeyDeserializer(new DefaultJsonDeserializer<Ignore>())
+            .Build();
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -43,42 +47,56 @@ public class KafkaConsumerBackgroundJob : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
+            var eventName = Maybe<string>.None;
             ConsumeResult<Ignore, string> consumeResult = null;
             try
             {
                 Log.Information("KAFKA CONSUMER{0}: A consumer for the topic {1} is consuming.",_consumer.MemberId, _topic);
                 consumeResult = _consumer.Consume(stoppingToken);
                 
-                var appEvent = consumeResult.Message.Value;
-                Log.Information("KAFKA CONSUMER{0}: A consumer for the topic {1} have received a message: {2}.",_consumer.MemberId, _topic, appEvent);
-                if (appEvent == null)
+                eventName = GetValue(consumeResult.Message.Headers, IEvent.HeaderName);
+                if (eventName.HasNoValue)
                 {
-                    Log.Warning("KAFKA CONSUMER{0}: A message equals null, topic - {1}", _consumer.MemberId,_topic);
+                    Log.Warning("KAFKA CONSUMER{0}: A message equals null, topic - {1}", 
+                        _consumer.MemberId,_topic);
                     continue;
                 }
-
-                var eventName = consumeResult.Message.Headers.FirstOrDefault(u => u.Key == IEvent.HeaderName);
-                if (eventName?.ToString() == null)
+                
+                var appEvent = consumeResult.Message.Value;
+                Log.Information("KAFKA CONSUMER{0}: A consumer for the topic {1} have received a message: {2}, event - {3}",
+                    _consumer.MemberId, _topic, appEvent, eventName.Value);
+                if (appEvent == null)
                 {
-                    Log.Warning("KAFKA CONSUMER{0}: A message equals null, topic - {1}", _consumer.MemberId,_topic);
+                    Log.Warning("KAFKA CONSUMER{0}: A message equals null, topic - {1}, event - {2}", 
+                        _consumer.MemberId,_topic, eventName.Value);
                     continue;
                 }
                 
                 await using var scope = _serviceProvider.CreateAsyncScope();
-                var handler = scope.ServiceProvider.GetRequiredKeyedService<IKafkaEventHandler>(eventName.ToString());
+                var handler = scope.ServiceProvider.GetRequiredKeyedService<IKafkaEventHandler>(eventName.Value);
                 if (handler == null)
-                    throw new Exception($"Event handler for {eventName} wasn't registered");
+                    throw new Exception($"Event handler for {eventName.Value} wasn't registered");
 
                 await handler.HandleRaw(appEvent);
             }
             catch (Exception e)
             {
-                Log.Error(e, "KAFKA CONSUMER{0}: message can't be handled because of an exception, topic - {1}, message - {2}", 
-                    _consumer.MemberId, _topic, consumeResult?.Message.Value ?? "null");
+                Log.Error(e, "KAFKA CONSUMER{0}: message can't be handled because of an exception, topic - {1}, event - {2}, message - {3}", 
+                    _consumer.MemberId, _topic, eventName.GetValueOrDefault("null"), consumeResult?.Message.Value ?? "null");
             }
         }
 
         Log.Information("KAFKA CONSUMER{0}: A consumer for the topic {1} is closing.", _consumer.MemberId, _topic);
         _consumer.Close();
+    }
+
+    private Maybe<string> GetValue(Headers headers, string key)
+    {
+        var header = headers.FirstOrDefault(u => u.Key == key);
+        if(header == null)
+            return Maybe<string>.None;
+
+        var value = Encoding.UTF8.GetString(header.GetValueBytes());
+        return value;
     }
 }

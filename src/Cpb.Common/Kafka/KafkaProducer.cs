@@ -15,7 +15,9 @@ public class KafkaProducer : IKafkaProducer
     public KafkaProducer(ProducerConfiguration configuration)
     {
         var producerConfig = new ProducerConfig { BootstrapServers = configuration.BootstrapServers };
-        _producer = new ProducerBuilder<Ignore, string>(producerConfig).Build();
+        _producer = new ProducerBuilder<Ignore, string>(producerConfig)
+            .SetKeySerializer(new DefaultJsonSerializer<Ignore>())
+            .Build();
         _configuration = configuration;
     }
 
