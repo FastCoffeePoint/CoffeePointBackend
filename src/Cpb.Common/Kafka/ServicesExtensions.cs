@@ -22,7 +22,7 @@ public static class ServicesExtensions
         where TEvent : class, IEvent
         where THandler : KafkaEventHandler<TEvent>
     {
-        services.AddKeyedScoped<KafkaEventHandler<TEvent>, THandler>(TEvent.Name);
+        services.AddKeyedScoped<IKafkaEventHandler, THandler>(TEvent.Name);
         return services;
     }
 }
