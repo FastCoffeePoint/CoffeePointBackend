@@ -2,9 +2,7 @@
 using Confluent.Kafka;
 using CSharpFunctionalExtensions;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Serilog;
 
 namespace Cpb.Common.Kafka;
@@ -13,20 +11,20 @@ public class KafkaConsumerBackgroundJob : BackgroundService
 {
     private readonly IConsumer<Ignore, string> _consumer;
     private readonly IServiceProvider _serviceProvider;
-    private readonly string _topic;
-
+    private readonly ConsumerConfiguration _configuration;
     public KafkaConsumerBackgroundJob(IServiceProvider serviceProvider,
-        ConsumerConfiguration consumerConfiguration)
+        ConsumerConfiguration configuration)
     {
-        _topic = consumerConfiguration.Topic;
         var consumerConfig = new ConsumerConfig
         {
-            BootstrapServers = consumerConfiguration.BootstrapServers,
-            GroupId = consumerConfiguration.GroupId,
+            BootstrapServers = configuration.BootstrapServers,
+            GroupId = configuration.GroupId,
             AutoOffsetReset = AutoOffsetReset.Latest,
+            EnableAutoCommit = false,
         };
 
         _serviceProvider = serviceProvider;
+        _configuration = configuration;
         _consumer = new ConsumerBuilder<Ignore, string>(consumerConfig)
             .SetKeyDeserializer(new DefaultJsonDeserializer<Ignore>())
             .Build();
@@ -42,8 +40,8 @@ public class KafkaConsumerBackgroundJob : BackgroundService
     
     private async void Process(CancellationToken stoppingToken)
     {
-        Log.Information("KAFKA CONSUMER{0}: A consumer for the topic {1} is starting.", _consumer.MemberId, _topic);
-        _consumer.Subscribe(_topic);
+        Log.Information("KAFKA CONSUMER({0}): A consumer for the topic {1} is starting.", _consumer.MemberId, _configuration.Topic);
+        _consumer.Subscribe(_configuration.Topic);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -51,24 +49,28 @@ public class KafkaConsumerBackgroundJob : BackgroundService
             ConsumeResult<Ignore, string> consumeResult = null;
             try
             {
-                Log.Information("KAFKA CONSUMER{0}: A consumer for the topic {1} is consuming.",_consumer.MemberId, _topic);
+                Log.Information("KAFKA CONSUMER({0}): A consumer for the topic {1} is consuming.",_consumer.MemberId, _configuration.Topic);
                 consumeResult = _consumer.Consume(stoppingToken);
                 
-                eventName = GetValue(consumeResult.Message.Headers, IEvent.HeaderName);
+                var audience = GetValue(consumeResult.Message.Headers, IEvent.AudienceHeaderName);
+                if (audience.HasNoValue || audience.Value != _configuration.Name)
+                    continue;
+                
+                eventName = GetValue(consumeResult.Message.Headers, IEvent.EventTypeHeaderName);
                 if (eventName.HasNoValue)
                 {
-                    Log.Warning("KAFKA CONSUMER{0}: A message equals null, topic - {1}", 
-                        _consumer.MemberId,_topic);
+                    Log.Warning("KAFKA CONSUMER({0}): A message equals null, topic - {1}", 
+                        _consumer.MemberId, _configuration.Topic);
                     continue;
                 }
                 
                 var appEvent = consumeResult.Message.Value;
-                Log.Information("KAFKA CONSUMER{0}: A consumer for the topic {1} have received a message: {2}, event - {3}",
-                    _consumer.MemberId, _topic, appEvent, eventName.Value);
+                Log.Information("KAFKA CONSUMER({0}): A consumer for the topic {1} have received a message: {2}, event - {3}",
+                    _consumer.MemberId, _configuration.Topic, appEvent, eventName.Value);
                 if (appEvent == null)
                 {
-                    Log.Warning("KAFKA CONSUMER{0}: A message equals null, topic - {1}, event - {2}", 
-                        _consumer.MemberId,_topic, eventName.Value);
+                    Log.Warning("KAFKA CONSUMER({0}): A message equals null, topic - {1}, event - {2}", 
+                        _consumer.MemberId, _configuration.Topic, eventName.Value);
                     continue;
                 }
                 
@@ -78,15 +80,16 @@ public class KafkaConsumerBackgroundJob : BackgroundService
                     throw new Exception($"Event handler for {eventName.Value} wasn't registered");
 
                 await handler.HandleRaw(appEvent);
+                _consumer.Commit(consumeResult);
             }
             catch (Exception e)
             {
-                Log.Error(e, "KAFKA CONSUMER{0}: message can't be handled because of an exception, topic - {1}, event - {2}, message - {3}", 
-                    _consumer.MemberId, _topic, eventName.GetValueOrDefault("null"), consumeResult?.Message.Value ?? "null");
+                Log.Error(e, "KAFKA CONSUMER({0}): message can't be handled because of an exception, topic - {1}, event - {2}, message - {3}", 
+                    _consumer.MemberId, _configuration.Topic, eventName.GetValueOrDefault("null"), consumeResult?.Message.Value ?? "null");
             }
         }
 
-        Log.Information("KAFKA CONSUMER{0}: A consumer for the topic {1} is closing.", _consumer.MemberId, _topic);
+        Log.Information("KAFKA CONSUMER({0}): A consumer for the topic {1} is closing.", _consumer.MemberId, _configuration.Topic);
         _consumer.Close();
     }
 

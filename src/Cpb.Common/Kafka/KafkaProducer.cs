@@ -26,7 +26,11 @@ public class KafkaProducer : IKafkaProducer
         var jsonEvent = JsonSerializer.Serialize(appEvent);
         var kafkaMessage = new Message<Ignore, string>
         {
-            Headers = [new Header(IEvent.HeaderName, Encoding.UTF8.GetBytes(T.Name))],
+            Headers = 
+            [
+                new Header(IEvent.EventTypeHeaderName, Encoding.UTF8.GetBytes(T.Name)),
+                new Header(IEvent.AudienceHeaderName, Encoding.UTF8.GetBytes(_configuration.Audience))
+            ],
             Value = jsonEvent
         };
 
